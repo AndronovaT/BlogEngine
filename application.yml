@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    driverClassName: com.mysql.jdbc.Driver
+    dialect: org.hibernate.dialect.MySQL8Dialect
+    url: jdbc:mysql://localhost:3306/blogengine?serverTimezone=UTC
+    username: root
+    password: testtest
+  jpa:
+    hibernate.ddl-auto: update
