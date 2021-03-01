@@ -1,4 +1,6 @@
-package main.model;
+package main.model.converterEnum;
+
+import main.model.enums.BlogSetting;
 
 import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;

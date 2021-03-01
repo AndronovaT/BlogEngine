@@ -1,6 +1,6 @@
 package main.persistence;
 
-import main.model.PostVote;
+import main.model.entity.PostVote;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 

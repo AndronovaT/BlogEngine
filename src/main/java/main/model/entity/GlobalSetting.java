@@ -1,8 +1,14 @@
-package main.model;
+package main.model.entity;
+
+import lombok.Data;
+import main.model.enums.BlogSetting;
+import main.model.converterEnum.BlogSettingConverter;
+import main.model.enums.YesNo;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
+@Data
 @Entity
 @Table(name = "global_settings")
 public class GlobalSetting {

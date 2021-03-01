@@ -6,4 +6,14 @@ spring:
     username: root
     password: testtest
   jpa:
-    hibernate.ddl-auto: update
+    hibernate.ddl-auto: none
+    properties:
+      hibernate.show_sql: false
+
+blog:
+  title: DevPub
+  subtitle: Рассказы разработчиков
+  phone: +7 903 666-44-55
+  email: mail@mail.ru
+  copyright: Дмитрий Сергеев
+  copyrightFrom: 2005

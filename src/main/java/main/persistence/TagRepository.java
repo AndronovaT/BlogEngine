@@ -1,6 +1,6 @@
 package main.persistence;
 
-import main.model.Tag;
+import main.model.entity.Tag;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 

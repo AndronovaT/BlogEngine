@@ -1,4 +1,4 @@
-package main.model;
+package main.model.enums;
 
 public enum BlogSetting {
     MULTIUSER_MODE("Многопользовательский режим"),
@@ -8,6 +8,7 @@ public enum BlogSetting {
     private String code;
 
     BlogSetting(String code) {
+        this.code = code;
     }
 
     public String getCode() {
