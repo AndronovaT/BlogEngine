@@ -21,4 +21,3 @@ public class InitResponse {
     private String copyrightFrom;
 }
 
-

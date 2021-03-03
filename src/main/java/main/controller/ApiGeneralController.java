@@ -3,6 +3,8 @@ package main.controller;
 import main.api.response.InitResponse;
 import main.api.response.SettingsResponse;
 import main.service.SettingsService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,12 +22,12 @@ public class ApiGeneralController {
     }
 
     @GetMapping("/init")
-    private InitResponse init(){
-        return initResponse;
+    private ResponseEntity<InitResponse> init(){
+        return new ResponseEntity<>(initResponse, HttpStatus.OK);
     }
 
     @GetMapping("/settings")
-    private SettingsResponse settings(){
-        return settingsService.getGlobalSettings();
+    private ResponseEntity<SettingsResponse> settings(){
+        return new ResponseEntity<>(settingsService.getGlobalSettings(), HttpStatus.OK);
     }
 }
