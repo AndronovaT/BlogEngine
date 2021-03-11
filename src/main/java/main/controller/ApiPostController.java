@@ -1,32 +1,31 @@
 package main.controller;
 
 import main.api.response.posts.AllPostsResponse;
-import main.service.AllPostsService;
+import main.model.enums.Mode;
+import main.service.PostService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import javax.persistence.criteria.CriteriaBuilder;
 
 
 @RestController
 @RequestMapping("/api/post")
 public class ApiPostController {
 
-    private final AllPostsService allPostsService;
+    private final PostService postService;
 
-    public ApiPostController(AllPostsService allPostsService) {
-        this.allPostsService = allPostsService;
+    public ApiPostController(PostService postService) {
+        this.postService = postService;
     }
 
 
-    @GetMapping("/{offset}{limit}{mode}")
-    private ResponseEntity<AllPostsResponse> allPosts(@PathVariable(name = "offset") String offset,
-                                                      @PathVariable(name = "limit") String limit,
-                                                      @PathVariable(name = "mode") String mode){
-        System.out.println("Hello");
-        return new ResponseEntity<>(allPostsService.getAllPosts(), HttpStatus.OK);
+    @GetMapping("")
+    private ResponseEntity<AllPostsResponse> allPosts(@RequestParam(required = false, defaultValue = "0", name = "offset") Integer offset,
+                                                      @RequestParam(required = false, defaultValue = "10", name = "limit") Integer limit,
+                                                      @RequestParam(required = false, defaultValue = "recent", name = "mode") Mode mode){
+        return new ResponseEntity<>(postService.getAllPosts(offset, limit, mode), HttpStatus.OK);
     }
 
 }
