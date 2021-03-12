@@ -7,8 +7,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.persistence.criteria.CriteriaBuilder;
-
 
 @RestController
 @RequestMapping("/api/post")
@@ -25,7 +23,15 @@ public class ApiPostController {
     private ResponseEntity<AllPostsResponse> allPosts(@RequestParam(required = false, defaultValue = "0", name = "offset") Integer offset,
                                                       @RequestParam(required = false, defaultValue = "10", name = "limit") Integer limit,
                                                       @RequestParam(required = false, defaultValue = "recent", name = "mode") Mode mode){
-        return new ResponseEntity<>(postService.getAllPosts(offset, limit, mode), HttpStatus.OK);
+        return new ResponseEntity<>(postService.getAllPosts(offset, limit, mode, ""), HttpStatus.OK);
+    }
+
+    @GetMapping("/search")
+    private ResponseEntity<AllPostsResponse> searchPosts(@RequestParam(required = false, defaultValue = "0", name = "offset") Integer offset,
+                                                         @RequestParam(required = false, defaultValue = "10", name = "limit") Integer limit,
+                                                         @RequestParam(required = false, defaultValue = "", name = "query") String query){
+
+        return new ResponseEntity<>(postService.getAllPosts(offset, limit, Mode.recent, query), HttpStatus.OK);
     }
 
 }

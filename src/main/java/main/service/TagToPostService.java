@@ -38,7 +38,7 @@ public class TagToPostService {
             return new AllTagsResponse();
         }
 
-        List<Post> posts = postRepository.search(Sort.by(Sort.Direction.DESC, "time"));
+        List<Post> posts = postRepository.search(Sort.by(Sort.Direction.DESC, "time"), "%");
         int sizePosts = 0;
 
         if (posts != null) {
