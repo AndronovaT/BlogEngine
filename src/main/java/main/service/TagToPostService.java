@@ -7,7 +7,6 @@ import main.model.entity.Tag;
 import main.model.entity.TagToPost;
 import main.persistence.PostRepository;
 import main.persistence.TagToPostRepository;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -38,7 +37,7 @@ public class TagToPostService {
             return new AllTagsResponse();
         }
 
-        List<Post> posts = postRepository.search(Sort.by(Sort.Direction.DESC, "time"), "%");
+        List<Post> posts = postRepository.search();
         int sizePosts = 0;
 
         if (posts != null) {

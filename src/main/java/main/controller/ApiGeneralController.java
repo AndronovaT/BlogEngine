@@ -45,12 +45,12 @@ public class ApiGeneralController {
     }
 
     @GetMapping("/tag")
-    private ResponseEntity<AllTagsResponse> tags(@RequestParam(required = false, defaultValue = "", name = "query") String query) {
+    private ResponseEntity<AllTagsResponse> tags(@RequestParam(defaultValue = "") String query) {
         return new ResponseEntity(tagToPostService.getAllTag(query), HttpStatus.OK);
     }
 
     @GetMapping("/calendar")
-    private ResponseEntity<CalendarResponse> calendarEvents(@RequestParam(required = false, name = "year") Integer year) {
+    private ResponseEntity<CalendarResponse> calendarEvents(@RequestParam(required = false) Integer year) {
         if (year == null || year == 0) {
             Calendar calendar = Calendar.getInstance();
             year = calendar.get(Calendar.YEAR);

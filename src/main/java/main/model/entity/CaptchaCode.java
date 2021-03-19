@@ -17,11 +17,11 @@ public class CaptchaCode {
     @NotNull
     private Date time;
     @NotNull
-    @Column(length = 65535, columnDefinition="TEXT")
+    @Column(columnDefinition="TEXT")
     @Type(type = "text")
     private String code;
     @NotNull
-    @Column(name = "secret_code", length = 65535, columnDefinition="TEXT")
+    @Column(name = "secret_code", columnDefinition="TEXT")
     @Type(type = "text")
     private String secretCode;
 }
