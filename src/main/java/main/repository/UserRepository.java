@@ -1,4 +1,4 @@
-package main.persistence;
+package main.repository;
 
 import main.model.entity.User;
 import org.springframework.data.repository.CrudRepository;

@@ -5,8 +5,9 @@ import main.api.response.tags.TagResponse;
 import main.model.entity.Post;
 import main.model.entity.Tag;
 import main.model.entity.TagToPost;
-import main.persistence.PostRepository;
-import main.persistence.TagToPostRepository;
+import main.repository.PostRepository;
+import main.repository.TagToPostRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -23,6 +24,8 @@ public class TagToPostService {
 
     private final TagToPostRepository tagToPostRepository;
     private final PostRepository postRepository;
+    @Value("${blog.minWeight}")
+    private String weightStr;
 
     public TagToPostService(TagToPostRepository tagToPostRepository, PostRepository postRepository) {
         this.tagToPostRepository = tagToPostRepository;
@@ -37,7 +40,7 @@ public class TagToPostService {
             return new AllTagsResponse();
         }
 
-        List<Post> posts = postRepository.search();
+        List<Post> posts = postRepository.searchAllPost();
         int sizePosts = 0;
 
         if (posts != null) {
@@ -69,8 +72,12 @@ public class TagToPostService {
             float n = k * item.getValue() * 100;
             int round = Math.round(n);
             float result = (float) round / 100;
-            tagResponse.setWeight(result);
-
+            float minWeight = Float.parseFloat(weightStr);
+            if (minWeight < result) {
+                tagResponse.setWeight(result);
+            } else {
+                tagResponse.setWeight(minWeight);
+            }
             tagResponseList.add(tagResponse);
         }
 

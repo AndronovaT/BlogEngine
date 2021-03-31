@@ -24,4 +24,9 @@ public class CaptchaCode {
     @Column(name = "secret_code", columnDefinition="TEXT")
     @Type(type = "text")
     private String secretCode;
+
+    public CaptchaCode(@NotNull String code, @NotNull String secretCode) {
+        this.code = code;
+        this.secretCode = secretCode;
+    }
 }

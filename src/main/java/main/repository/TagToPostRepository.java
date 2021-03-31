@@ -1,4 +1,4 @@
-package main.persistence;
+package main.repository;
 
 import main.model.entity.TagToPost;
 import org.springframework.data.jpa.repository.Query;

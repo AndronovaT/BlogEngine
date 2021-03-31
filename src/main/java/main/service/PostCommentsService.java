@@ -2,7 +2,7 @@ package main.service;
 
 import main.model.entity.Post;
 import main.model.entity.PostComment;
-import main.persistence.PostCommentRepository;
+import main.repository.PostCommentRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

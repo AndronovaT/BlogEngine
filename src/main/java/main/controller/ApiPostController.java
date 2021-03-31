@@ -18,6 +18,7 @@ import java.time.format.DateTimeFormatter;
 public class ApiPostController {
 
     private final PostService postService;
+    private final static DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     public ApiPostController(PostService postService) {
         this.postService = postService;
@@ -56,8 +57,7 @@ public class ApiPostController {
     private ResponseEntity<AllPostsResponse> getPostsByDate(@RequestParam(defaultValue = "0") Integer offset,
                                                             @RequestParam(defaultValue = "10") Integer limit,
                                                             @RequestParam(name = "date") String dateString){
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        LocalDate date = LocalDate.parse(dateString, formatter);
+        LocalDate date = LocalDate.parse(dateString, FORMATTER);
         return new ResponseEntity<>(postService.getPostsByDate(offset, limit, date), HttpStatus.OK);
     }
 

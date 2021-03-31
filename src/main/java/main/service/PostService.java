@@ -9,17 +9,15 @@ import main.api.response.posts.PostResponse;
 import main.model.entity.*;
 import main.model.enums.Mode;
 import main.model.enums.ModerationStatus;
-import main.persistence.PostRepository;
+import main.repository.PostRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Tuple;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -44,10 +42,11 @@ public class PostService {
 
     public AllPostsResponse getAllPosts(int offset, int limit, Mode mode, String query){
 
-        Pageable page = PageRequest.of(offset, limit, (mode == Mode.early ? Sort.by("time") : Sort.by("time").descending()));
-        Page<Post> postsPage = postRepository.search(page, "%" + query + "%");
+        Pageable page = PageRequest.of(offset, limit, (mode.getSort()));
 
-        return getAllPostsResponse(postsPage, mode);
+        Page<Object[]> postsPage = postRepository.search(page, "%" + query + "%");
+
+        return getAllPostsResponse(postsPage);
     }
 
     public void addView(Post post){
@@ -136,68 +135,54 @@ public class PostService {
     public AllPostsResponse getPostsByDate(int offset, int limit, LocalDate date){
 
         java.sql.Date dateSQl = java.sql.Date.valueOf(date);
+        Mode mode = Mode.recent;
 
-        Pageable page = PageRequest.of(offset, limit, Sort.by("time").descending());
-        Page<Post> postsPage = postRepository.searchByDate(page, dateSQl);
+        Pageable page = PageRequest.of(offset, limit, (mode.getSort()));
+        Page<Object[]> postsPage = postRepository.searchByDate(page, dateSQl);
 
-        return getAllPostsResponse(postsPage, null);
+        return getAllPostsResponse(postsPage);
     }
 
     public AllPostsResponse getPostsByTag(int offset, int limit, String tag){
 
-        Pageable page = PageRequest.of(offset, limit, Sort.by("time").descending());
-        Page<Post> postsPage = postRepository.searchByTag(page, tag);
+        Mode mode = Mode.recent;
+        Pageable page = PageRequest.of(offset, limit, (mode.getSort()));
+        Page<Object[]> postsPage = postRepository.searchByTag(page, tag);
 
-        return getAllPostsResponse(postsPage, null);
+        return getAllPostsResponse(postsPage);
     }
 
-    private AllPostsResponse getAllPostsResponse(Page<Post> postsPage, Mode mode) {
+    private AllPostsResponse getAllPostsResponse(Page<Object[]> postsPage) {
         if (postsPage == null || !postsPage.hasContent()) {
             AllPostsResponse emptyPostsResponse = new AllPostsResponse();
             emptyPostsResponse.setCount(0);
             return emptyPostsResponse;
         }
 
-        List<Post> posts = postsPage.getContent();
+        List<Object[]> resultList = postsPage.getContent();
 
         AllPostsResponse allPostsResponse = new AllPostsResponse();
         allPostsResponse.setCount(Math.toIntExact(postsPage.getTotalElements()));
-        List<PostResponse> postResponseList = getPostListResponses(posts);
-
-        if (mode == Mode.popular){
-            postResponseList.sort(Comparator.comparing(PostResponse::getCommentCount).reversed());
-        } else if (mode == Mode.best) {
-            postResponseList.sort(Comparator.comparing(PostResponse::getLikeCount).reversed());
-        }
-
+        List<PostResponse> postResponseList = getPostListResponses(resultList);
         allPostsResponse.setPosts(postResponseList);
         return allPostsResponse;
     }
 
-    private List<PostResponse> getPostListResponses(List<Post> posts) {
+    private List<PostResponse> getPostListResponses(List<Object[]> resultList) {
         List<PostResponse> postResponseList = new ArrayList<>();
 
-        posts.forEach(post -> {
-            PostResponse postResponse = new PostResponse();
-            postResponse.setId(post.getId());
+        resultList.forEach(res -> {
+            PostResponse postResponse = new PostResponse((Integer) res[0], (Long) res[1], (String) res[3], (Integer) res[5],
+                    (Long) res[6], (Long) res[7], (Long) res[8] );
 
-            long seconds = getSeconds(post.getTime());
-            postResponse.setTimestamp(seconds);
-
-            User userPost = post.getUser();
+            User userPost = (User) res[2];
             UserResponse user = new UserResponse();
             user.setId(userPost.getId());
             user.setName(userPost.getName());
             postResponse.setUser(user);
 
-            postResponse.setTitle(post.getTitle());
-            postResponse.setAnnounce(post.getText().replaceAll("\\<.*?\\>", "").substring(0, 150) + "...");
-
-            postResponse.setLikeCount(getLike(post));
-            postResponse.setDislikeCount(getDislike(post));
-
-            postResponse.setCommentCount(getComments(post));
-            postResponse.setViewCount(post.getViewCount());
+            String text = (String) res[4];
+            postResponse.setAnnounce(text.replaceAll("\\<.*?\\>", "").substring(0, 150) + "...");
 
             postResponseList.add(postResponse);
         });
@@ -240,38 +225,11 @@ public class PostService {
 
     public CalendarResponse getCalendarPosts(Integer year){
 
-        List<Tuple> resultList = getResultQueryCalendarCount(em);
-
-        if (resultList.isEmpty()) {
-            return new CalendarResponse();
-        }
-
-        CalendarResponse calendarResponse = new CalendarResponse();
-        Map<String, Integer> posts = new HashMap<>();
-        Set<Integer> years = new HashSet<>();
-        SimpleDateFormat formatDate = new SimpleDateFormat("yyyy-MM-dd");
-
-        Calendar c = Calendar.getInstance();
-        c.set(year, 1, 1);
-
-        resultList.forEach(res -> {
-            years.add((Integer) res.get("year"));
-
-            Date timePost = (Date) res.get("time");
-            if (timePost.after(c.getTime())) {
-                Long countPosts = (Long) res.get("countPosts");
-                Integer count = Math.toIntExact(countPosts);
-                posts.put(formatDate.format(res.get("time")), count);
-            }
-        });
-
-        calendarResponse.setYears(years);
-        calendarResponse.setPosts(posts);
-
+        CalendarResponse calendarResponse = new CalendarResponse(year, getResultQueryCalendarCount());
         return calendarResponse;
     }
 
-    private List<Tuple> getResultQueryCalendarCount(EntityManager em) {
+    private List<Tuple> getResultQueryCalendarCount() {
         return em
                 .createQuery( "SELECT YEAR(p.time) as year, p.time as time, COUNT(p.id) as countPosts " +
                         "FROM Post p " +
@@ -281,6 +239,5 @@ public class PostService {
                         "GROUP BY YEAR(p.time), p.time", Tuple.class)
                 .getResultList();
     }
-
 
 }

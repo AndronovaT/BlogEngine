@@ -2,7 +2,7 @@ package main.service;
 
 import main.model.entity.Post;
 import main.model.entity.PostVote;
-import main.persistence.PostVoteRepository;
+import main.repository.PostVoteRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

@@ -1,8 +1,7 @@
-package main.persistence;
+package main.repository;
 
 import main.model.entity.Post;
 import main.model.entity.Tag;
-import main.model.entity.TagToPost;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;

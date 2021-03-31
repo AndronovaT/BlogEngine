@@ -2,6 +2,7 @@ package main.config;
 
 import main.api.response.InitResponse;
 import main.api.response.checkAuthorization.CheckAuthResponse;
+import main.api.response.tags.TagResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

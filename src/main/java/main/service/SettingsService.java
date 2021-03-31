@@ -3,7 +3,7 @@ package main.service;
 import main.api.response.SettingsResponse;
 import main.model.entity.GlobalSetting;
 import main.model.enums.YesNo;
-import main.persistence.GlobalSettingsRepository;
+import main.repository.GlobalSettingsRepository;
 import org.springframework.stereotype.Service;
 
 @Service

@@ -10,8 +10,22 @@ public class PostResponse {
     private UserResponse user;
     private String title;
     private String announce;
-    private int likeCount;
-    private int dislikeCount;
-    private int commentCount;
-    private int viewCount;
+    private long likeCount;
+    private long dislikeCount;
+    private long commentCount;
+    private long viewCount;
+
+    public PostResponse() {
+    }
+
+    public PostResponse(int id, long timestamp, String title, int viewCount,
+                        long likeCount, long dislikeCount, long commentCount) {
+        this.id = id;
+        this.timestamp = timestamp;
+        this.title = title;
+        this.viewCount = viewCount;
+        this.likeCount = likeCount;
+        this.dislikeCount = dislikeCount;
+        this.commentCount = commentCount;
+    }
 }
