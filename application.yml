@@ -18,3 +18,4 @@ blog:
   copyright: Дмитрий Сергеев
   copyrightFrom: 2005
   minWeight: 0.2
+  minuteLifeCaptcha: 60

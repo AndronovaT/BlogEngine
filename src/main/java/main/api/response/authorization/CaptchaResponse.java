@@ -1,4 +1,4 @@
-package main.api.response.checkAuthorization;
+package main.api.response.authorization;
 
 import lombok.Data;
 

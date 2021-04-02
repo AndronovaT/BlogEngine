@@ -25,6 +25,9 @@ public class CaptchaCode {
     @Type(type = "text")
     private String secretCode;
 
+    public CaptchaCode() {
+    }
+
     public CaptchaCode(@NotNull String code, @NotNull String secretCode) {
         this.code = code;
         this.secretCode = secretCode;

@@ -39,4 +39,14 @@ public class User {
     private List<PostVote> postVotes;
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<PostComment> postComments;
+
+    public User() {
+    }
+
+    public User(@NotNull String name,  @NotNull String password, @NotNull String email) {
+        this.name = name;
+        this.email = email;
+        this.password = password;
+        this.regTime = new Date();
+    }
 }

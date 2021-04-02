@@ -1,9 +1,10 @@
 package main.service;
 
 
-import main.api.response.checkAuthorization.CaptchaResponse;
+import main.api.response.authorization.CaptchaResponse;
 import main.model.entity.CaptchaCode;
 import main.repository.CaptchaCodeRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
@@ -13,6 +14,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.Date;
+import java.util.List;
 
 
 @Service
@@ -28,8 +30,21 @@ public class CaptchaCodeService {
     private final static String FONT_FAMILY_NAME = "Verdana";
     private final static String HEADING = "data:image/png;base64, ";
 
+    @Value("${blog.minuteLifeCaptcha}")
+    private String minuteLifeCaptchaStr;
+
     public CaptchaCodeService(CaptchaCodeRepository captchaCodeRepository) {
         this.captchaCodeRepository = captchaCodeRepository;
+    }
+
+    public void deleteOldCaptcha(){
+        int minuteLifeCaptcha = Integer.parseInt(minuteLifeCaptchaStr);
+        List<CaptchaCode> oldCaptcha = captchaCodeRepository.findOldCaptcha(minuteLifeCaptcha);
+        oldCaptcha.forEach(captchaCodeRepository::delete);
+    }
+
+    public List<CaptchaCode> findCaptchaBySecret(String secret){
+        return captchaCodeRepository.findBySecret(secret);
     }
 
     public CaptchaResponse generateCaptcha() {
