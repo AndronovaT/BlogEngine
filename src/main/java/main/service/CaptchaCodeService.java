@@ -5,6 +5,8 @@ import main.api.response.authorization.CaptchaResponse;
 import main.model.entity.CaptchaCode;
 import main.repository.CaptchaCodeRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
@@ -47,15 +49,10 @@ public class CaptchaCodeService {
         return captchaCodeRepository.findBySecret(secret);
     }
 
-    public CaptchaResponse generateCaptcha() {
+    public ResponseEntity<CaptchaResponse> generateCaptcha() {
         String word = generateCaptchaText(CAPTCHA_LENGTH);
         BufferedImage captchaImage = createImage(word);
         String secret = generateCaptchaText(SECRET_LENGTH);
-
-        if (captchaImage == null) {
-            return new CaptchaResponse();
-        }
-
         try {
             byte[] byteArray = toByteArray(captchaImage, "png");
             String encodedString = Base64.getEncoder().encodeToString(byteArray);
@@ -64,10 +61,10 @@ public class CaptchaCodeService {
             captchaCode.setTime(new Date());
             captchaCodeRepository.save(captchaCode);
 
-            return new CaptchaResponse(secret, HEADING + encodedString);
+            return new ResponseEntity<>(new CaptchaResponse(secret, HEADING + encodedString), HttpStatus.OK);
         } catch (IOException e) {
             e.printStackTrace();
-            return new CaptchaResponse();
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -85,38 +82,32 @@ public class CaptchaCodeService {
     }
 
     private static BufferedImage createImage(String word) {
-        BufferedImage bImg = null;
+        BufferedImage bImg;
 
-        try {
-            // image create
-            bImg = new BufferedImage(IMAGE_WIDTH, IMAGE_HEIGHT,
-                    BufferedImage.TYPE_INT_ARGB_PRE);
-            Graphics2D g2 = bImg.createGraphics();
+        bImg = new BufferedImage(IMAGE_WIDTH, IMAGE_HEIGHT,
+                BufferedImage.TYPE_INT_ARGB_PRE);
+        Graphics2D g2 = bImg.createGraphics();
 
-            g2.setColor(Color.BLACK);
-            g2.fillRect(0, 0, IMAGE_WIDTH, IMAGE_HEIGHT);
+        g2.setColor(Color.BLACK);
+        g2.fillRect(0, 0, IMAGE_WIDTH, IMAGE_HEIGHT);
 
-            Font font = new Font(FONT_FAMILY_NAME, Font.BOLD, TEXT_SIZE);
-            g2.setFont(font);
-            g2.setColor(Color.WHITE);
-            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
-                    RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        Font font = new Font(FONT_FAMILY_NAME, Font.BOLD, TEXT_SIZE);
+        g2.setFont(font);
+        g2.setColor(Color.WHITE);
+        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+                RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-            char[] chars = word.toCharArray();
-            int x = 10;
-            int y = IMAGE_HEIGHT / 2 + TEXT_SIZE / 2;
+        char[] chars = word.toCharArray();
+        int x = 10;
+        int y = IMAGE_HEIGHT / 2 + TEXT_SIZE / 2;
 
-            for (int i = 0; i < chars.length; i++) {
-                char ch = chars[i];
-                g2.drawString(String.valueOf(ch), x + font.getSize() * i, y
-                        + (int) Math.pow(-1, i) * (TEXT_SIZE / 6));
-            }
-
-            g2.dispose();
-        } catch (Exception e) {
-            e.printStackTrace();
-            bImg = null;
+        for (int i = 0; i < chars.length; i++) {
+            char ch = chars[i];
+            g2.drawString(String.valueOf(ch), x + font.getSize() * i, y
+                    + (int) Math.pow(-1, i) * (TEXT_SIZE / 6));
         }
+
+        g2.dispose();
 
         return bImg;
     }

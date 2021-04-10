@@ -1,7 +1,7 @@
 package main.api.response.posts;
 
 import lombok.Data;
-import main.api.response.UserResponse;
+import main.api.response.authorization.UserResponse;
 
 @Data
 public class PostResponse {
@@ -16,6 +16,11 @@ public class PostResponse {
     private long viewCount;
 
     public PostResponse() {
+    }
+
+    public PostResponse(int id, long timestamp) {
+        this.id = id;
+        this.timestamp = timestamp;
     }
 
     public PostResponse(int id, long timestamp, String title, int viewCount,

@@ -35,22 +35,22 @@ public class ApiGeneralController {
     }
 
     @GetMapping("/init")
-    private ResponseEntity<InitResponse> init(){
+    public ResponseEntity<InitResponse> init(){
         return new ResponseEntity<>(initResponse, HttpStatus.OK);
     }
 
     @GetMapping("/settings")
-    private ResponseEntity<SettingsResponse> settings(){
+    public ResponseEntity<SettingsResponse> settings(){
         return new ResponseEntity<>(settingsService.getGlobalSettings(), HttpStatus.OK);
     }
 
     @GetMapping("/tag")
-    private ResponseEntity<AllTagsResponse> tags(@RequestParam(defaultValue = "") String query) {
+    public ResponseEntity<AllTagsResponse> tags(@RequestParam(defaultValue = "") String query) {
         return new ResponseEntity(tagToPostService.getAllTag(query), HttpStatus.OK);
     }
 
     @GetMapping("/calendar")
-    private ResponseEntity<CalendarResponse> calendarEvents(@RequestParam(required = false) Integer year) {
+    public ResponseEntity<CalendarResponse> calendarEvents(@RequestParam(required = false) Integer year) {
         if (year == null || year == 0) {
             Calendar calendar = Calendar.getInstance();
             year = calendar.get(Calendar.YEAR);

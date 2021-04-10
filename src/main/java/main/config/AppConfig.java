@@ -1,7 +1,7 @@
 package main.config;
 
 import main.api.response.InitResponse;
-import main.api.response.authorization.CheckAuthResponse;
+import main.api.response.authorization.LoginResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,8 +14,7 @@ public class AppConfig {
     }
 
     @Bean
-    public CheckAuthResponse checkAuthResponse() {
-        return new CheckAuthResponse();
+    public LoginResponse loginResponse() {
+        return new LoginResponse();
     }
-
 }

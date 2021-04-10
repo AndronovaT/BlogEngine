@@ -7,6 +7,7 @@ import main.model.enums.Mode;
 import main.service.PostService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -26,14 +27,15 @@ public class ApiPostController {
 
 
     @GetMapping("")
-    private ResponseEntity<AllPostsResponse> allPosts(@RequestParam(defaultValue = "0") Integer offset,
+  //  @PreAuthorize("hasAuthority('user:write')")
+    public ResponseEntity<AllPostsResponse> allPosts(@RequestParam(defaultValue = "0") Integer offset,
                                                       @RequestParam(defaultValue = "10") Integer limit,
                                                       @RequestParam(defaultValue = "recent") Mode mode){
         return new ResponseEntity<>(postService.getAllPosts(offset, limit, mode, ""), HttpStatus.OK);
     }
 
     @GetMapping("/{ID}")
-    private ResponseEntity<InfoPostResponse> post(@PathVariable(name = "ID") Integer id){
+    public ResponseEntity<InfoPostResponse> post(@PathVariable(name = "ID") Integer id){
         Post post = postService.getPostById(id);
         if(post == null){
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -46,15 +48,15 @@ public class ApiPostController {
     }
 
     @GetMapping("/search")
-    private ResponseEntity<AllPostsResponse> searchPosts(@RequestParam(defaultValue = "0") Integer offset,
+ //   @PreAuthorize("hasAuthority('user:moderate')")
+    public ResponseEntity<AllPostsResponse> searchPosts(@RequestParam(defaultValue = "0") Integer offset,
                                                          @RequestParam(defaultValue = "10") Integer limit,
                                                          @RequestParam(defaultValue = "") String query){
-
         return new ResponseEntity<>(postService.getAllPosts(offset, limit, Mode.recent, query), HttpStatus.OK);
     }
 
     @GetMapping("/byDate")
-    private ResponseEntity<AllPostsResponse> getPostsByDate(@RequestParam(defaultValue = "0") Integer offset,
+    public ResponseEntity<AllPostsResponse> getPostsByDate(@RequestParam(defaultValue = "0") Integer offset,
                                                             @RequestParam(defaultValue = "10") Integer limit,
                                                             @RequestParam(name = "date") String dateString){
         LocalDate date = LocalDate.parse(dateString, FORMATTER);
@@ -62,7 +64,7 @@ public class ApiPostController {
     }
 
     @GetMapping("/byTag")
-    private ResponseEntity<AllPostsResponse> getPostByTag(@RequestParam(defaultValue = "0") Integer offset,
+    public ResponseEntity<AllPostsResponse> getPostByTag(@RequestParam(defaultValue = "0") Integer offset,
                                                           @RequestParam(defaultValue = "10") Integer limit,
                                                           @RequestParam() String tag){
         return new ResponseEntity<>(postService.getPostsByTag(offset, limit, tag), HttpStatus.OK);

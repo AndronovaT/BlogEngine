@@ -1,7 +1,7 @@
 package main.service;
 
 import main.api.response.CalendarResponse;
-import main.api.response.UserResponse;
+import main.api.response.authorization.UserResponse;
 import main.api.response.posts.AllPostsResponse;
 import main.api.response.posts.CommentResponse;
 import main.api.response.posts.InfoPostResponse;

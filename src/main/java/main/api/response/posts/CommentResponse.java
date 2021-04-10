@@ -1,7 +1,7 @@
 package main.api.response.posts;
 
 import lombok.Data;
-import main.api.response.UserResponse;
+import main.api.response.authorization.UserResponse;
 
 
 @Data

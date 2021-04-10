@@ -1,6 +1,7 @@
 package main.model.entity;
 
 import lombok.Data;
+import main.model.enums.Role;
 import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
@@ -48,5 +49,9 @@ public class User {
         this.email = email;
         this.password = password;
         this.regTime = new Date();
+    }
+
+    public Role getRole() {
+        return isModerator == 1 ? Role.MODERATOR : Role.USER;
     }
 }

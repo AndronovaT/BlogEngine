@@ -1,8 +1,9 @@
 package main.controller;
 
+import main.api.request.registration.LoginRequest;
 import main.api.request.registration.RegisterRequest;
+import main.api.response.authorization.LoginResponse;
 import main.api.response.authorization.CaptchaResponse;
-import main.api.response.authorization.CheckAuthResponse;
 import main.api.response.authorization.RegisterResponse;
 import main.model.entity.CaptchaCode;
 import main.model.entity.User;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,30 +22,34 @@ import java.util.Map;
 @RequestMapping("/api/auth")
 public class ApiAuthController {
 
-    private final CheckAuthResponse checkAuthResponse;
+    private final LoginResponse loginResponse;
     private final CaptchaCodeService captchaCodeService;
     private final UserService userService;
 
-    public ApiAuthController(CheckAuthResponse checkAuthResponse, CaptchaCodeService captchaCodeService, UserService userService) {
-        this.checkAuthResponse = checkAuthResponse;
+    public ApiAuthController(LoginResponse loginResponse, CaptchaCodeService captchaCodeService, UserService userService) {
+        this.loginResponse = loginResponse;
         this.captchaCodeService = captchaCodeService;
         this.userService = userService;
     }
 
     @GetMapping("/check")
-    private ResponseEntity<CheckAuthResponse> checkAuth(){
-        checkAuthResponse.setResult(false);
-        return new ResponseEntity<>(checkAuthResponse, HttpStatus.OK);
+    public ResponseEntity<LoginResponse> checkAuth(Principal principal){
+        if (principal == null){
+            return new ResponseEntity<>(new LoginResponse(), HttpStatus.OK);
+        }
+        LoginResponse loginResponse = userService.getLoginResponse(principal.getName());
+        loginResponse.setResult(true);
+        return new ResponseEntity<>(loginResponse, HttpStatus.OK);
     }
 
     @GetMapping("/captcha")
-    private ResponseEntity<CaptchaResponse> getCaptcha(){
+    public ResponseEntity<CaptchaResponse> getCaptcha(){
         captchaCodeService.deleteOldCaptcha();
-        return new ResponseEntity<>(captchaCodeService.generateCaptcha(), HttpStatus.OK);
+        return captchaCodeService.generateCaptcha();
     }
 
     @PostMapping("/register")
-    private ResponseEntity<RegisterResponse> registerUser(@RequestBody RegisterRequest registerRequest){
+    public ResponseEntity<RegisterResponse> registerUser(@RequestBody RegisterRequest registerRequest){
         Map<String, String> errors = checkRegData(registerRequest);
 
         if (errors.size() > 0){
@@ -55,11 +61,11 @@ public class ApiAuthController {
         return new ResponseEntity<>(new RegisterResponse(true), HttpStatus.OK);
     }
 
-    private Map<String, String> checkRegData(@RequestParam RegisterRequest registerRequest) {
+    private Map<String, String> checkRegData(RegisterRequest registerRequest) {
         Map<String, String> errors = new HashMap<>();
 
         List<User> users = userService.findByEmail(registerRequest.getEmail());
-        if (users != null && users.size() > 0){
+        if (!users.isEmpty()){
             errors.put("email", "Этот e-mail уже зарегистрирован");
         }
 
@@ -72,11 +78,14 @@ public class ApiAuthController {
         }
 
         List<CaptchaCode> captchaCode = captchaCodeService.findCaptchaBySecret(registerRequest.getCaptchaSecret());
-        if (captchaCode == null || captchaCode.size() == 0) {
-            errors.put("captcha", "Код с картинки введён неверно");
-        } else if (!captchaCode.get(0).getCode().equals(registerRequest.getCaptcha())) {
+        if (captchaCode.isEmpty() || (!captchaCode.isEmpty() && (!captchaCode.get(0).getCode().equals(registerRequest.getCaptcha())))) {
             errors.put("captcha", "Код с картинки введён неверно");
         }
         return errors;
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest){
+        return new ResponseEntity<>(userService.login(loginRequest), HttpStatus.OK);
     }
 }
