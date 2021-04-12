@@ -88,4 +88,10 @@ public class ApiAuthController {
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest){
         return new ResponseEntity<>(userService.login(loginRequest), HttpStatus.OK);
     }
+
+    @GetMapping("/logout")
+    public ResponseEntity<LoginResponse> logout(){
+        return new ResponseEntity<>(new LoginResponse(true), HttpStatus.OK);
+    }
+
 }
