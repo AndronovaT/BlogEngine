@@ -4,7 +4,7 @@ import main.api.request.registration.LoginRequest;
 import main.api.request.registration.RegisterRequest;
 import main.api.response.authorization.LoginResponse;
 import main.api.response.authorization.CaptchaResponse;
-import main.api.response.authorization.RegisterResponse;
+import main.api.response.ResultResponse;
 import main.model.entity.CaptchaCode;
 import main.model.entity.User;
 import main.service.CaptchaCodeService;
@@ -49,16 +49,16 @@ public class ApiAuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<RegisterResponse> registerUser(@RequestBody RegisterRequest registerRequest){
+    public ResponseEntity<ResultResponse> registerUser(@RequestBody RegisterRequest registerRequest){
         Map<String, String> errors = checkRegData(registerRequest);
 
         if (errors.size() > 0){
-            return new ResponseEntity<>(new RegisterResponse(false, errors), HttpStatus.OK);
+            return new ResponseEntity<>(new ResultResponse(false, errors), HttpStatus.OK);
         }
 
         userService.saveUser(registerRequest);
 
-        return new ResponseEntity<>(new RegisterResponse(true), HttpStatus.OK);
+        return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
     }
 
     private Map<String, String> checkRegData(RegisterRequest registerRequest) {
@@ -78,7 +78,7 @@ public class ApiAuthController {
         }
 
         List<CaptchaCode> captchaCode = captchaCodeService.findCaptchaBySecret(registerRequest.getCaptchaSecret());
-        if (captchaCode.isEmpty() || (!captchaCode.isEmpty() && (!captchaCode.get(0).getCode().equals(registerRequest.getCaptcha())))) {
+        if (captchaCode.isEmpty() || !captchaCode.get(0).getCode().equals(registerRequest.getCaptcha())) {
             errors.put("captcha", "Код с картинки введён неверно");
         }
         return errors;

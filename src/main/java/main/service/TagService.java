@@ -16,7 +16,15 @@ public class TagService {
         this.tagRepository = tagRepository;
     }
 
-    public List<Tag> tagByPost(Post post) {
-        return tagRepository.tagByPost(post);
+    public List<Tag> tagByPost(Post post, String tagText) {
+        return tagRepository.tagByPost(post, tagText);
+    }
+
+    public List<Tag> searchByName(String name) {
+        return tagRepository.search(name);
+    }
+
+    public Tag save(Tag tag) {
+        return tagRepository.save(tag);
     }
 }

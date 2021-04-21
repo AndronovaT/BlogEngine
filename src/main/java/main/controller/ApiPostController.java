@@ -1,9 +1,13 @@
 package main.controller;
 
+import main.api.request.PostRequest;
+import main.api.response.ResultResponse;
 import main.api.response.posts.AllPostsResponse;
 import main.api.response.posts.InfoPostResponse;
 import main.model.entity.Post;
 import main.model.enums.Mode;
+import main.model.enums.ModerationStatus;
+import main.model.enums.StatusMyPosts;
 import main.service.PostService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +16,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 
 
 @RestController
@@ -27,7 +33,6 @@ public class ApiPostController {
 
 
     @GetMapping("")
-  //  @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<AllPostsResponse> allPosts(@RequestParam(defaultValue = "0") Integer offset,
                                                       @RequestParam(defaultValue = "10") Integer limit,
                                                       @RequestParam(defaultValue = "recent") Mode mode){
@@ -48,7 +53,6 @@ public class ApiPostController {
     }
 
     @GetMapping("/search")
- //   @PreAuthorize("hasAuthority('user:moderate')")
     public ResponseEntity<AllPostsResponse> searchPosts(@RequestParam(defaultValue = "0") Integer offset,
                                                          @RequestParam(defaultValue = "10") Integer limit,
                                                          @RequestParam(defaultValue = "") String query){
@@ -70,5 +74,79 @@ public class ApiPostController {
         return new ResponseEntity<>(postService.getPostsByTag(offset, limit, tag), HttpStatus.OK);
     }
 
+    @GetMapping("/moderation")
+    @PreAuthorize("hasAuthority('user:moderate')")
+    public ResponseEntity<AllPostsResponse> getPostByModerator(@RequestParam(defaultValue = "0") Integer offset,
+                                                               @RequestParam(defaultValue = "10") Integer limit,
+                                                               @RequestParam String status){
+        ModerationStatus moderationStatus = ModerationStatus.NEW;
+        if (status.equals("declined")) {
+            moderationStatus = ModerationStatus.DECLINED;
+        } else if (status.equals("accepted")){
+            moderationStatus = ModerationStatus.ACCEPTED;
+        }
+        return new ResponseEntity<>(postService.getAllPostModerator(offset, limit, moderationStatus), HttpStatus.OK);
+    }
 
+    @GetMapping("/my")
+    @PreAuthorize("hasAuthority('user:write')")
+    public ResponseEntity<AllPostsResponse> getPostByUser(@RequestParam(defaultValue = "0") Integer offset,
+                                                          @RequestParam(defaultValue = "10") Integer limit,
+                                                          @RequestParam StatusMyPosts status) {
+        return new ResponseEntity<>(postService.getAllPostCurrentUser(offset, limit, status), HttpStatus.OK);
+    }
+
+    @PostMapping("")
+    @PreAuthorize("hasAuthority('user:write')")
+    public ResponseEntity<ResultResponse> addPost(@RequestBody PostRequest postRequest){
+
+        Map<String, String> errors = checkPost(postRequest);
+        if (errors.size() > 0){
+            return new ResponseEntity<>(new ResultResponse(false, errors), HttpStatus.OK);
+        }
+
+        postService.addPost(postRequest);
+        
+        return new ResponseEntity(new ResultResponse(true), HttpStatus.OK);
+    }
+
+    private Map<String, String> checkPost(PostRequest postRequest) {
+        Map<String, String> errors = new HashMap<>();
+
+        if (postRequest.getTitle() == null || postRequest.getTitle().equals("")){
+            errors.put("title", "Заголовок не установлен");
+        }
+
+        if (postRequest.getTitle().length() < 3){
+            errors.put("title", "Заголовок слишком короткий");
+        }
+
+        if (postRequest.getText() == null || postRequest.getText().equals("")){
+            errors.put("text", "Текст публикации не установлен");
+        }
+
+        if (postRequest.getText().length() < 3){
+            errors.put("text", "Текст публикации слишком короткий");
+        }
+
+        return errors;
+    }
+
+    @PutMapping("/{ID}")
+    public ResponseEntity<ResultResponse> editPost(@PathVariable(name = "ID") Integer id,
+                                                   @RequestBody PostRequest postRequest){
+        Post post = postService.getPostById(id);
+        if(post == null){
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        Map<String, String> errors = checkPost(postRequest);
+        if (errors.size() > 0){
+            return new ResponseEntity<>(new ResultResponse(false, errors), HttpStatus.OK);
+        }
+
+        postService.editPost(post, postRequest);
+
+        return new ResponseEntity(new ResultResponse(true), HttpStatus.OK);
+    }
 }

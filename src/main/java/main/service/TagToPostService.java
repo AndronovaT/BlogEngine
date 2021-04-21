@@ -32,6 +32,10 @@ public class TagToPostService {
         this.postRepository = postRepository;
     }
 
+    public TagToPost save(TagToPost tagToPost){
+        return tagToPostRepository.save(tagToPost);
+    }
+
     public AllTagsResponse getAllTag(String query) {
 
         List<TagToPost> tagToPostList = tagToPostRepository.search(query + "%");

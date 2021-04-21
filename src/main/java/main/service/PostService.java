@@ -1,5 +1,6 @@
 package main.service;
 
+import main.api.request.PostRequest;
 import main.api.response.CalendarResponse;
 import main.api.response.authorization.UserResponse;
 import main.api.response.posts.AllPostsResponse;
@@ -9,6 +10,7 @@ import main.api.response.posts.PostResponse;
 import main.model.entity.*;
 import main.model.enums.Mode;
 import main.model.enums.ModerationStatus;
+import main.model.enums.StatusMyPosts;
 import main.repository.PostRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,25 +30,31 @@ public class PostService {
     private final PostVoteService postVoteService;
     private final PostCommentsService postCommentsService;
     private final TagService tagService;
+    private final TagToPostService tagToPostService;
+    private final UserService userService;
 
     @PersistenceContext
     EntityManager em;
 
     public PostService(PostRepository postRepository, PostVoteService postVoteService,
-                       PostCommentsService postCommentsService, TagService tagService) {
+                       PostCommentsService postCommentsService, TagService tagService,
+                       TagToPostService tagToPostService, UserService userService) {
         this.postRepository = postRepository;
         this.postVoteService = postVoteService;
         this.postCommentsService = postCommentsService;
         this.tagService = tagService;
+        this.tagToPostService = tagToPostService;
+        this.userService = userService;
     }
 
     public AllPostsResponse getAllPosts(int offset, int limit, Mode mode, String query){
 
         Pageable page = PageRequest.of(offset, limit, (mode.getSort()));
 
-        Page<Object[]> postsPage = postRepository.search(page, "%" + query + "%");
+        Page<PostResponse> postsPage = postRepository.search(page, "%" + query + "%");
 
         return getAllPostsResponse(postsPage);
+
     }
 
     public void addView(Post post){
@@ -105,7 +113,7 @@ public class PostService {
         infoPostResponse.setComments(commentResponseList);
 
         List<String> nameTags = new ArrayList<>();
-        List<Tag> tags = tagService.tagByPost(post);
+        List<Tag> tags = tagService.tagByPost(post, "%%");
         tags.forEach(tag -> {
             nameTags.add(tag.getName());
         });
@@ -138,56 +146,43 @@ public class PostService {
         Mode mode = Mode.recent;
 
         Pageable page = PageRequest.of(offset, limit, (mode.getSort()));
-        Page<Object[]> postsPage = postRepository.searchByDate(page, dateSQl);
+        Page<PostResponse> postsPage = postRepository.searchByDate(page, dateSQl);
 
         return getAllPostsResponse(postsPage);
+
     }
 
     public AllPostsResponse getPostsByTag(int offset, int limit, String tag){
 
         Mode mode = Mode.recent;
         Pageable page = PageRequest.of(offset, limit, (mode.getSort()));
-        Page<Object[]> postsPage = postRepository.searchByTag(page, tag);
+        Page<PostResponse> postsPage = postRepository.searchByTag(page, tag);
 
         return getAllPostsResponse(postsPage);
     }
 
-    private AllPostsResponse getAllPostsResponse(Page<Object[]> postsPage) {
+    private AllPostsResponse getAllPostsResponse(Page<PostResponse> postsPage) {
         if (postsPage == null || !postsPage.hasContent()) {
             AllPostsResponse emptyPostsResponse = new AllPostsResponse();
             emptyPostsResponse.setCount(0);
             return emptyPostsResponse;
         }
 
-        List<Object[]> resultList = postsPage.getContent();
+        List<PostResponse> postResponseList = postsPage.getContent();
 
         AllPostsResponse allPostsResponse = new AllPostsResponse();
         allPostsResponse.setCount(Math.toIntExact(postsPage.getTotalElements()));
-        List<PostResponse> postResponseList = getPostListResponses(resultList);
-        allPostsResponse.setPosts(postResponseList);
-        return allPostsResponse;
-    }
 
-    private List<PostResponse> getPostListResponses(List<Object[]> resultList) {
-        List<PostResponse> postResponseList = new ArrayList<>();
-
-        resultList.forEach(res -> {
-            PostResponse postResponse = new PostResponse((Integer) res[0], (Long) res[1], (String) res[3], (Integer) res[5],
-                    (Long) res[6], (Long) res[7], (Long) res[8] );
-
-            User userPost = (User) res[2];
+        postResponseList.forEach(postResponse -> {
             UserResponse user = new UserResponse();
-            user.setId(userPost.getId());
-            user.setName(userPost.getName());
+            user.setId(postResponse.getUserPost().getId());
+            user.setName(postResponse.getUserPost().getName());
             postResponse.setUser(user);
-
-            String text = (String) res[4];
-            postResponse.setAnnounce(text.replaceAll("\\<.*?\\>", "").substring(0, 150) + "...");
-
-            postResponseList.add(postResponse);
+            postResponse.setUserPost(null);
         });
 
-        return postResponseList;
+        allPostsResponse.setPosts(postResponseList);
+        return allPostsResponse;
     }
 
     private int getComments(Post post) {
@@ -240,4 +235,102 @@ public class PostService {
                 .getResultList();
     }
 
+    public AllPostsResponse getAllPostModerator(Integer offset, Integer limit, ModerationStatus moderationStatus) {
+        User moderator = userService.getCurrentUser();
+        Pageable page = PageRequest.of(offset, limit);
+
+        Page<PostResponse> postsPage;
+        if(moderationStatus == ModerationStatus.NEW) {
+            postsPage = postRepository.searchForModeration(page);
+        } else {
+            byte isActive = 1;
+            postsPage = postRepository.searchByModerator(page, moderator, moderationStatus);
+        }
+        return getAllPostsResponse(postsPage);
+    }
+
+    public AllPostsResponse getAllPostCurrentUser(int offset, int limit, StatusMyPosts status) {
+        User currentUser = userService.getCurrentUser();
+
+        Pageable page = PageRequest.of(offset, limit);
+
+        byte isActive = 1;
+        ModerationStatus moderationStatus = ModerationStatus.NEW;
+        if (status == StatusMyPosts.inactive){
+            isActive = 0;
+        }
+
+        if (status == StatusMyPosts.declined){
+            moderationStatus = ModerationStatus.DECLINED;
+        }
+
+        if (status == StatusMyPosts.published){
+            moderationStatus = ModerationStatus.ACCEPTED;
+        }
+
+        Page<PostResponse> postsPage = postRepository.searchByCurrentUser(page, currentUser, isActive, moderationStatus);
+        return getAllPostsResponse(postsPage);
+    }
+
+    public Post addPost(PostRequest postRequest){
+        Post post = new Post();
+        post.setIsActive(postRequest.getActive());
+        post.setModerationStatus(ModerationStatus.NEW);
+        post.setText(postRequest.getText());
+        post.setTitle(postRequest.getTitle());
+        long currentSec = getSeconds(new Date());
+        post.setTime( currentSec > postRequest.getTimestamp() ? new Date() : new Date(postRequest.getTimestamp()));
+        post.setUser(userService.getCurrentUser());
+
+        Post newPost = postRepository.save(post);
+
+        addTagToNewPost(postRequest, newPost, false);
+
+        return newPost;
+    }
+
+    private void addTagToNewPost(PostRequest postRequest, Post newPost, boolean update) {
+        List<String> tags = postRequest.getTags();
+
+        for (String tagText: tags) {
+            if (update) {
+                List<Tag> tagsPost = tagService.tagByPost(newPost, tagText);
+                if (!tagsPost.isEmpty()) {
+                    continue;
+                }
+            }
+
+            List<Tag> tagsByName = tagService.searchByName(tagText);
+            Tag currentTag;
+
+            if (!tagsByName.isEmpty()) {
+                currentTag = tagsByName.get(0);
+            } else {
+                Tag tag = new Tag(tagText);
+                currentTag = tagService.save(tag);
+            }
+
+            TagToPost tagToPost = new TagToPost(newPost, currentTag);
+            tagToPostService.save(tagToPost);
+
+        }
+    }
+
+
+    public Post editPost(Post post, PostRequest postRequest){
+        post.setIsActive(postRequest.getActive());
+        post.setText(postRequest.getText());
+        post.setTitle(postRequest.getTitle());
+        long currentSec = getSeconds(new Date());
+        post.setTime( currentSec > postRequest.getTimestamp() ? new Date() : new Date(postRequest.getTimestamp()));
+
+        User currentUser =  userService.getCurrentUser();
+        if (currentUser.equals(post.getUser())) {
+            post.setModerationStatus(ModerationStatus.NEW);
+        }
+        Post newPost = postRepository.save(post);
+        addTagToNewPost(postRequest, newPost, true);
+
+        return newPost;
+    }
 }

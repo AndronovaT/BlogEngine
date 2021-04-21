@@ -17,4 +17,11 @@ public class Tag {
     private String name;
     @OneToMany(mappedBy = "tag", cascade = CascadeType.ALL)
     private List<TagToPost> tagToPosts;
+
+    public Tag() {
+    }
+
+    public Tag(@NotNull String name) {
+        this.name = name;
+    }
 }

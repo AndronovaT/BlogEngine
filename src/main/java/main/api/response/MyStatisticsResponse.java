@@ -8,8 +8,8 @@ import lombok.Data;
 @AllArgsConstructor
 public class MyStatisticsResponse {
     private long postsCount;
-    private long likesCount;
-    private long dislikesCount;
+    private int likesCount;
+    private int dislikesCount;
     private long viewsCount;
     private long firstPublication;
 

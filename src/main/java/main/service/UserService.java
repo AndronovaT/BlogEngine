@@ -11,12 +11,15 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.persistence.Tuple;
+import java.util.Date;
 import java.util.List;
 
 @Service
@@ -51,9 +54,8 @@ public class UserService {
                 authenticate(
                         new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(auth);
-        org.springframework.security.core.userdetails.User user = (org.springframework.security.core.userdetails.User) auth.getPrincipal();
-
-        return getLoginResponse(user.getUsername());
+        String username = ((UserDetails) auth.getPrincipal()).getUsername();
+        return getLoginResponse(username);
     }
 
     public User getCurrentUser(){
@@ -97,10 +99,12 @@ public class UserService {
         }
         else {
             MyStatisticsResponse myStatisticsResponse =  resultQueryUserStatistic.get(0);
-            List<Long> viewCountUserPosts = getViewCountUserPosts(getCurrentUser());
-            if (!viewCountUserPosts.isEmpty()){
-                myStatisticsResponse.setViewsCount(viewCountUserPosts.get(0));
-            }
+            List<Tuple> votesCountUser = getVotesCountUser(getCurrentUser());
+            votesCountUser.forEach(res -> {
+                myStatisticsResponse.setLikesCount(Math.toIntExact((Long) res.get("likesCount")));
+                myStatisticsResponse.setDislikesCount(Math.toIntExact((Long) res.get("dislikesCount")));
+            });
+
             return myStatisticsResponse;
         }
     }
@@ -108,25 +112,26 @@ public class UserService {
     private List<MyStatisticsResponse> getMyStatisticsResponseFromQuery(User user) {
         return em
                 .createQuery( "SELECT NEW main.api.response.MyStatisticsResponse(COUNT(DISTINCT p.id) AS postsCount, " +
-                        "SUM(CASE WHEN likes.value IS NOT NULL THEN 1 ELSE 0 END) AS likesCount, " +
-                        "SUM(CASE WHEN dislikes.value IS NOT NULL THEN 1 ELSE 0 END) AS dislikesCount, " +
+                        "0 AS likesCount, " +
+                        "0 AS dislikesCount, " +
                         "SUM(p.viewCount) AS viewsCount, " +
                         "MIN(UNIX_TIMESTAMP(p.time)) AS firstPublication) " +
-                        "FROM Post as p " +
-                        "LEFT JOIN PostVote AS likes ON p = likes.post AND likes.value = 1 " +
-                        "LEFT JOIN PostVote AS dislikes ON p = dislikes.post AND dislikes.value = -1 " +
+                        "FROM User u " +
+                        "LEFT JOIN Post as p ON p.user = u " +
                         "WHERE p.user = :user " +
                         "GROUP BY p.user", MyStatisticsResponse.class)
                 .setParameter("user", user)
                 .getResultList();
     }
 
-    private List<Long> getViewCountUserPosts(User user){
+    private List<Tuple> getVotesCountUser(User user){
         return em
-                .createQuery( "SELECT SUM(p.viewCount) AS viewsCount " +
-                        "FROM Post as p " +
-                        "WHERE p.user = :user " +
-                        "GROUP BY p.user", Long.class)
+                .createQuery( "SELECT SUM(CASE WHEN votes.value = 1 THEN 1 ELSE 0 END) AS likesCount, " +
+                        "SUM(CASE WHEN votes.value = -1 THEN 1 ELSE 0 END) AS dislikesCount " +
+                        "FROM User u " +
+                        "INNER JOIN PostVote AS votes ON u = votes.user " +
+                        "WHERE u = :user " +
+                        "GROUP BY u", Tuple.class)
                 .setParameter("user", user)
                 .getResultList();
     }

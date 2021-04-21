@@ -13,9 +13,9 @@ spring:
 blog:
   title: DevPub
   subtitle: Рассказы разработчиков
-  phone: +7 903 666-44-55
-  email: mail@mail.ru
-  copyright: Дмитрий Сергеев
-  copyrightFrom: 2005
+  phone: +7 902 172-58-36
+  email: kirangarsk@mail.ru
+  copyright: Татьяна Андронова
+  copyrightFrom: 2021
   minWeight: 0.2
   minuteLifeCaptcha: 60

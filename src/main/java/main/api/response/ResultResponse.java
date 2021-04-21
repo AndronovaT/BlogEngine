@@ -1,4 +1,4 @@
-package main.api.response.authorization;
+package main.api.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
@@ -7,18 +7,18 @@ import java.util.Map;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class RegisterResponse {
+public class ResultResponse {
     boolean result;
     Map<String, String> errors;
 
-    public RegisterResponse() {
+    public ResultResponse() {
     }
 
-    public RegisterResponse(boolean result) {
+    public ResultResponse(boolean result) {
         this.result = result;
     }
 
-    public RegisterResponse(boolean result, Map<String, String> errors) {
+    public ResultResponse(boolean result, Map<String, String> errors) {
         this.result = result;
         this.errors = errors;
     }
