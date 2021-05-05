@@ -6,7 +6,6 @@ import main.api.response.authorization.UserResponse;
 import main.api.response.posts.AllPostsResponse;
 import main.api.response.posts.CommentResponse;
 import main.api.response.posts.InfoPostResponse;
-import main.api.response.posts.PostResponse;
 import main.model.entity.*;
 import main.model.enums.Mode;
 import main.model.enums.ModerationStatus;
@@ -51,7 +50,7 @@ public class PostService {
 
         Pageable page = PageRequest.of(offset, limit, (mode.getSort()));
 
-        Page<PostResponse> postsPage = postRepository.search(page, "%" + query + "%");
+        Page<Post> postsPage = postRepository.search(page, "%" + query + "%");
 
         return getAllPostsResponse(postsPage);
 
@@ -68,12 +67,13 @@ public class PostService {
         }
     }
 
+    public void savePost(Post post){
+        postRepository.save(post);
+    }
+
     public Post getPostById(int id){
         Optional<Post> byId = postRepository.findById(id);
-        if (!byId.isPresent()) {
-            return null;
-        }
-        return byId.get();
+        return byId.orElse(null);
     }
 
     public InfoPostResponse getInfoPostResponse(Post post) {
@@ -146,7 +146,7 @@ public class PostService {
         Mode mode = Mode.recent;
 
         Pageable page = PageRequest.of(offset, limit, (mode.getSort()));
-        Page<PostResponse> postsPage = postRepository.searchByDate(page, dateSQl);
+        Page<Post> postsPage = postRepository.searchByDate(page, dateSQl);
 
         return getAllPostsResponse(postsPage);
 
@@ -156,32 +156,31 @@ public class PostService {
 
         Mode mode = Mode.recent;
         Pageable page = PageRequest.of(offset, limit, (mode.getSort()));
-        Page<PostResponse> postsPage = postRepository.searchByTag(page, tag);
+        Page<Post> postsPage = postRepository.searchByTag(page, tag);
 
         return getAllPostsResponse(postsPage);
     }
 
-    private AllPostsResponse getAllPostsResponse(Page<PostResponse> postsPage) {
+    private AllPostsResponse getAllPostsResponse(Page<Post> postsPage) {
         if (postsPage == null || !postsPage.hasContent()) {
             AllPostsResponse emptyPostsResponse = new AllPostsResponse();
             emptyPostsResponse.setCount(0);
             return emptyPostsResponse;
         }
 
-        List<PostResponse> postResponseList = postsPage.getContent();
+        List<Post> postList = postsPage.getContent();
 
         AllPostsResponse allPostsResponse = new AllPostsResponse();
         allPostsResponse.setCount(Math.toIntExact(postsPage.getTotalElements()));
 
-        postResponseList.forEach(postResponse -> {
+        postList.forEach(post -> {
             UserResponse user = new UserResponse();
-            user.setId(postResponse.getUserPost().getId());
-            user.setName(postResponse.getUserPost().getName());
-            postResponse.setUser(user);
-            postResponse.setUserPost(null);
+            user.setId(post.getUser().getId());
+            user.setName(post.getUser().getName());
+            post.setUserResponse(user);
         });
 
-        allPostsResponse.setPosts(postResponseList);
+        allPostsResponse.setPosts(postList);
         return allPostsResponse;
     }
 
@@ -239,11 +238,10 @@ public class PostService {
         User moderator = userService.getCurrentUser();
         Pageable page = PageRequest.of(offset, limit);
 
-        Page<PostResponse> postsPage;
+        Page<Post> postsPage;
         if(moderationStatus == ModerationStatus.NEW) {
             postsPage = postRepository.searchForModeration(page);
         } else {
-            byte isActive = 1;
             postsPage = postRepository.searchByModerator(page, moderator, moderationStatus);
         }
         return getAllPostsResponse(postsPage);
@@ -268,7 +266,7 @@ public class PostService {
             moderationStatus = ModerationStatus.ACCEPTED;
         }
 
-        Page<PostResponse> postsPage = postRepository.searchByCurrentUser(page, currentUser, isActive, moderationStatus);
+        Page<Post> postsPage = postRepository.searchByCurrentUser(page, currentUser, isActive, moderationStatus);
         return getAllPostsResponse(postsPage);
     }
 

@@ -8,18 +8,23 @@ import java.util.Map;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ResultResponse {
-    boolean result;
+    Boolean result;
     Map<String, String> errors;
+    Integer id;
 
     public ResultResponse() {
     }
 
-    public ResultResponse(boolean result) {
+    public ResultResponse(Boolean result) {
         this.result = result;
     }
 
-    public ResultResponse(boolean result, Map<String, String> errors) {
+    public ResultResponse(Boolean result, Map<String, String> errors) {
         this.result = result;
         this.errors = errors;
+    }
+
+    public ResultResponse(Integer id) {
+        this.id = id;
     }
 }

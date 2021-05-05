@@ -1,6 +1,5 @@
 package main.repository;
 
-import main.api.response.posts.PostResponse;
 import main.model.entity.Post;
 import main.model.entity.User;
 import main.model.enums.ModerationStatus;
@@ -23,10 +22,10 @@ public interface PostRepository extends PagingAndSortingRepository<Post, Integer
             "and p.time <= NOW() ")
     List<Post> searchAllPost();
 
-    @Query(value = "SELECT new main.api.response.posts.PostResponse(" +
+    @Query(value = "SELECT new main.model.entity.Post(" +
             "p.id AS id, " +
             "UNIX_TIMESTAMP(p.time) AS timestamp, " +
-            "MAX(p.user) AS userPost, " +
+            "MAX(p.user) AS user, " +
             "MAX(p.title) AS title, " +
             "MAX(p.text) AS announce, " +
             "MAX(p.viewCount) AS viewCount, " +
@@ -41,12 +40,12 @@ public interface PostRepository extends PagingAndSortingRepository<Post, Integer
             "and p.time <= NOW() " +
             "and lower(p.text) LIKE lower(:query) " +
             "GROUP BY p.id, UNIX_TIMESTAMP(p.time)")
-    Page<PostResponse> search(Pageable page, @Param("query") String query);
+    Page<Post> search(Pageable page, @Param("query") String query);
 
-    @Query(value = "SELECT new main.api.response.posts.PostResponse( " +
+    @Query(value = "SELECT new main.model.entity.Post( " +
             "p.id AS id, " +
             "UNIX_TIMESTAMP(p.time) AS timestamp, " +
-            "MAX(p.user) AS userPost, " +
+            "MAX(p.user) AS user, " +
             "MAX(p.title) AS title, " +
             "MAX(p.text) AS announce, " +
             "MAX(p.viewCount) AS viewCount, " +
@@ -60,12 +59,12 @@ public interface PostRepository extends PagingAndSortingRepository<Post, Integer
             "and p.moderationStatus = 'ACCEPTED' " +
             "and DATE(p.time) = :datePost " +
             "GROUP BY p.id, UNIX_TIMESTAMP(p.time)")
-    Page<PostResponse> searchByDate(Pageable page, @Param("datePost") Date date);
+    Page<Post> searchByDate(Pageable page, @Param("datePost") Date date);
 
-    @Query(value = "SELECT new main.api.response.posts.PostResponse( " +
+    @Query(value = "SELECT new main.model.entity.Post( " +
             "p.id AS id, " +
             "UNIX_TIMESTAMP(p.time) AS timestamp, " +
-            "MAX(p.user) AS userPost, " +
+            "MAX(p.user) AS user, " +
             "MAX(p.title) AS title, " +
             "MAX(p.text) AS announce, " +
             "MAX(p.viewCount) AS viewCount, " +
@@ -81,12 +80,12 @@ public interface PostRepository extends PagingAndSortingRepository<Post, Integer
             "and p.moderationStatus = 'ACCEPTED' " +
             "and t.name = :tag " +
             "GROUP BY p.id, UNIX_TIMESTAMP(p.time)")
-    Page<PostResponse> searchByTag(Pageable page, @Param("tag") String tag);
+    Page<Post> searchByTag(Pageable page, @Param("tag") String tag);
 
-    @Query(value = "SELECT new main.api.response.posts.PostResponse( " +
+    @Query(value = "SELECT new main.model.entity.Post( " +
             "p.id AS id, " +
             "UNIX_TIMESTAMP(p.time) AS timestamp, " +
-            "MAX(p.user) AS userPost, " +
+            "MAX(p.user) AS user, " +
             "MAX(p.title) AS title, " +
             "MAX(p.text) AS announce, " +
             "MAX(p.viewCount) AS viewCount, " +
@@ -100,16 +99,16 @@ public interface PostRepository extends PagingAndSortingRepository<Post, Integer
             "p.isActive = :isActive AND " +
             "p.moderationStatus = :moderationStatus " +
             "GROUP BY p.id, UNIX_TIMESTAMP(p.time)")
-    Page<PostResponse> searchByCurrentUser(Pageable page,
+    Page<Post> searchByCurrentUser(Pageable page,
                                            @Param("user") User user,
                                            @Param("isActive") byte isActive,
                                            @Param("moderationStatus") ModerationStatus moderationStatus);
 
 
-    @Query(value = "SELECT new main.api.response.posts.PostResponse( " +
+    @Query(value = "SELECT new main.model.entity.Post( " +
             "p.id AS id, " +
             "UNIX_TIMESTAMP(p.time) AS timestamp, " +
-            "MAX(p.user) AS userPost, " +
+            "MAX(p.user) AS user, " +
             "MAX(p.title) AS title, " +
             "MAX(p.text) AS announce, " +
             "MAX(p.viewCount) AS viewCount, " +
@@ -123,14 +122,14 @@ public interface PostRepository extends PagingAndSortingRepository<Post, Integer
             "p.isActive = 1 AND " +
             "p.moderationStatus = :moderationStatus " +
             "GROUP BY p.id, UNIX_TIMESTAMP(p.time)")
-    Page<PostResponse> searchByModerator(Pageable page,
+    Page<Post> searchByModerator(Pageable page,
                                            @Param("moderator") User moderator,
                                            @Param("moderationStatus") ModerationStatus moderationStatus);
 
-    @Query(value = "SELECT new main.api.response.posts.PostResponse( " +
+    @Query(value = "SELECT new main.model.entity.Post( " +
             "p.id AS id, " +
             "UNIX_TIMESTAMP(p.time) AS timestamp, " +
-            "MAX(p.user) AS userPost, " +
+            "MAX(p.user) AS user, " +
             "MAX(p.title) AS title, " +
             "MAX(p.text) AS announce, " +
             "MAX(p.viewCount) AS viewCount, " +
@@ -143,6 +142,6 @@ public interface PostRepository extends PagingAndSortingRepository<Post, Integer
             "WHERE p.isActive =  1 AND " +
             "p.moderationStatus = 'NEW' " +
             "GROUP BY p.id, UNIX_TIMESTAMP(p.time)")
-    Page<PostResponse> searchForModeration(Pageable page);
+    Page<Post> searchForModeration(Pageable page);
 
 }
