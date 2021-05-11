@@ -15,4 +15,8 @@ public interface UserRepository extends CrudRepository<User, Integer> {
             "WHERE lower(user.email) LIKE lower(:email) ")
     List<User> findByEmail(@Param("email") String email);
 
+    @Query(value = "SELECT user FROM User user " +
+            "WHERE user.code LIKE :code ")
+    List<User> findByCode(@Param("code") String code);
+
 }

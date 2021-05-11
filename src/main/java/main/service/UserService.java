@@ -1,10 +1,13 @@
 package main.service;
 
+import main.api.request.ProfileImageRequest;
+import main.api.request.ProfileRequest;
 import main.api.request.registration.LoginRequest;
 import main.api.request.registration.RegisterRequest;
 import main.api.response.MyStatisticsResponse;
 import main.api.response.authorization.LoginResponse;
 import main.api.response.authorization.UserResponse;
+import main.model.entity.CaptchaCode;
 import main.model.entity.User;
 import main.repository.UserRepository;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,8 +22,9 @@ import org.springframework.stereotype.Service;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Tuple;
-import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class UserService {
@@ -28,23 +32,35 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+    private final CaptchaCodeService captchaCodeService;
     @PersistenceContext
     EntityManager em;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                       AuthenticationManager authenticationManager, CaptchaCodeService captchaCodeService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
+        this.captchaCodeService = captchaCodeService;
     }
 
     public List<User> findByEmail(String email){
         return userRepository.findByEmail(email);
     }
 
+    public List<User> findByCode(String code){
+        return userRepository.findByCode(code);
+    }
+
     public User saveUser(RegisterRequest registerRequest) {
         User user = new User(registerRequest.getName(),
                 passwordEncoder.encode(registerRequest.getPassword()),
                 registerRequest.getEmail());
+        userRepository.save(user);
+        return user;
+    }
+
+    public User saveUser(User user) {
         userRepository.save(user);
         return user;
     }
@@ -56,6 +72,76 @@ public class UserService {
         SecurityContextHolder.getContext().setAuthentication(auth);
         String username = ((UserDetails) auth.getPrincipal()).getUsername();
         return getLoginResponse(username);
+    }
+
+    public Map<String, String> checkUserData(RegisterRequest registerRequest) {
+        Map<String, String> errors = new HashMap<>();
+
+        List<User> users = findByEmail(registerRequest.getEmail());
+        if (!users.isEmpty()){
+            errors.put("email", "Этот e-mail уже зарегистрирован");
+        }
+
+        if (!registerRequest.getName().matches("[а-яА-Я\\-\\s]+$")){
+            errors.put("name", "Имя указано неверно");
+        }
+
+        if (registerRequest.getPassword().length() < 6){
+            errors.put("password", "Пароль короче 6-ти символов");
+        }
+
+        List<CaptchaCode> captchaCode = captchaCodeService.findCaptchaBySecret(registerRequest.getCaptchaSecret());
+           if (captchaCode.isEmpty() || !captchaCode.get(0).getCode().equals(registerRequest.getCaptcha())) {
+               errors.put("captcha", "Код с картинки введён неверно");
+        }
+
+        return errors;
+    }
+
+    public Map<String, String> checkUserData(ProfileRequest profileRequest, User user) {
+        Map<String, String> errors = new HashMap<>();
+
+        if (!user.getEmail().equals(profileRequest.getEmail())) {
+            List<User> users = findByEmail(profileRequest.getEmail());
+            if (!users.isEmpty()) {
+                errors.put("email", "Этот e-mail уже зарегистрирован");
+            }
+        }
+
+        if (!profileRequest.getName().matches("[а-яА-Я\\-\\s]+$")){
+            errors.put("name", "Имя указано неверно");
+        }
+
+        if (profileRequest.getPassword() != null && profileRequest.getPassword().length() < 6){
+            errors.put("password", "Пароль короче 6-ти символов");
+        }
+
+        return errors;
+    }
+
+    public Map<String, String> checkUserData(ProfileImageRequest profileRequest, User user) {
+        Map<String, String> errors = new HashMap<>();
+
+        if (!user.getEmail().equals(profileRequest.getEmail())) {
+            List<User> users = findByEmail(profileRequest.getEmail());
+            if (!users.isEmpty()) {
+                errors.put("email", "Этот e-mail уже зарегистрирован");
+            }
+        }
+
+        if (!profileRequest.getName().matches("[а-яА-Я\\-\\s]+$")){
+            errors.put("name", "Имя указано неверно");
+        }
+
+        if (profileRequest.getPassword() != null && profileRequest.getPassword().length() < 6){
+            errors.put("password", "Пароль короче 6-ти символов");
+        }
+
+        return errors;
+    }
+
+    public String encodePassword(String password){
+        return passwordEncoder.encode(password);
     }
 
     public User getCurrentUser(){

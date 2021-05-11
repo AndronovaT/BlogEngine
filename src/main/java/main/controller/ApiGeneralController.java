@@ -1,21 +1,29 @@
 package main.controller;
 
+import com.mortennobel.imagescaling.ResampleOp;
 import main.api.request.CommentRequest;
 import main.api.request.ModerationRequest;
+import main.api.request.ProfileRequest;
+import main.api.request.ProfileImageRequest;
 import main.api.response.*;
 import main.api.response.tags.AllTagsResponse;
 import main.model.entity.Post;
 import main.model.entity.PostComment;
+import main.model.entity.User;
 import main.model.enums.ModerationStatus;
 import main.service.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.IOException;
+import javax.imageio.ImageIO;
+import javax.servlet.http.HttpServletRequest;
+import java.awt.image.BufferedImage;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,7 +41,11 @@ public class ApiGeneralController {
     private final PostService postService;
     private final UserService userService;
     private final PostCommentsService postCommentsService;
-    private static final long MAX_IMAGE = 50;
+
+    @Autowired
+    private HttpServletRequest request;
+
+    private static final long MAX_IMAGE = 5;
     private static final String SEPARATOR = File.separator;
 
     public ApiGeneralController(InitResponse initResponse, SettingsService settingsService, TagToPostService tagToPostService,
@@ -84,7 +96,12 @@ public class ApiGeneralController {
             return new ResponseEntity<>(new ResultResponse(false, errors), HttpStatus.BAD_REQUEST);
         }
 
-        String filename = storeFile(image);
+        String filename = null;
+        try {
+            filename = storeFile(image.getInputStream(), image.getOriginalFilename());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         if (filename == null){
             return new ResponseEntity<>(new ResultResponse(false, errors), HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -142,18 +159,87 @@ public class ApiGeneralController {
         return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
     }
 
-    public String storeFile(MultipartFile image) {
-        String generatedName = newFileName();
-        String pathFile = "upload" + SEPARATOR + generatedName.substring(0,2) + SEPARATOR + generatedName.substring(2,4);
-        String fileName = SEPARATOR + generatedName.substring(5) + "_" +image.getOriginalFilename();
+    @PostMapping("/profile/my")
+    @PreAuthorize("hasAuthority('user:write')")
+    public ResponseEntity<ResultResponse> editUserProfile(@RequestBody ProfileRequest profileRequest){
 
-        Path fileStorageLocation = Paths.get(pathFile).toAbsolutePath().normalize();
+        User currentUser = userService.getCurrentUser();
+        Map<String, String> errors = userService.checkUserData(profileRequest, currentUser);
+        if (errors.size() > 0){
+            return new ResponseEntity<>(new ResultResponse(false, errors), HttpStatus.OK);
+        }
+
+        currentUser.setName(profileRequest.getName());
+        currentUser.setEmail(profileRequest.getEmail());
+
+        if (profileRequest.getPassword() != null){
+            currentUser.setPassword(userService.encodePassword(profileRequest.getPassword()));
+        }
+        if (profileRequest.getRemovePhoto() == 1){
+            currentUser.setPhoto("");
+        }
+
+        userService.saveUser(currentUser);
+
+        return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
+    }
+
+    @PostMapping(value = "/profile/my", consumes = {"multipart/form-data"})
+    @PreAuthorize("hasAuthority('user:write')")
+    public ResponseEntity<ResultResponse> editUserProfile(@ModelAttribute ProfileImageRequest profileRequest){
+
+        User currentUser = userService.getCurrentUser();
+        Map<String, String> errors = userService.checkUserData(profileRequest, currentUser);
+        Map<String, String> errorsImage = checkFile(profileRequest.getPhoto());
+        errors.putAll(errorsImage);
+        if (errors.size() > 0){
+            return new ResponseEntity<>(new ResultResponse(false, errors), HttpStatus.OK);
+        }
+
+        String filename = null;
+        ResampleOp resamOp = new ResampleOp(36,36);
+        try {
+            BufferedImage bufferedImage = ImageIO.read(profileRequest.getPhoto().getInputStream());
+            BufferedImage modifiedImage = resamOp.filter(bufferedImage, null);
+
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            ImageIO.write(modifiedImage, "png", os);
+            InputStream is = new ByteArrayInputStream(os.toByteArray());
+
+            filename = storeFile(is, profileRequest.getPhoto().getOriginalFilename());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (filename == null){
+            return new ResponseEntity<>(new ResultResponse(false, errors), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        currentUser.setPhoto(filename);
+        currentUser.setName(profileRequest.getName());
+        currentUser.setEmail(profileRequest.getEmail());
+
+        if (profileRequest.getPassword() != null){
+            currentUser.setPassword(userService.encodePassword(profileRequest.getPassword()));
+        }
+
+        userService.saveUser(currentUser);
+
+        return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
+    }
+
+    public String storeFile(InputStream image, String originalFilename ) {
+        String generatedName = newFileName();
+        String uploadDir = SEPARATOR + "upload" + SEPARATOR + generatedName.substring(0,2) + SEPARATOR + generatedName.substring(2,4);
+        String fileName = SEPARATOR + generatedName.substring(5) + "_"  + originalFilename;
+
+        String realPath = request.getServletContext().getRealPath(uploadDir);
+        Path fileStorageLocation = Paths.get(realPath).toAbsolutePath().normalize();
 
         try {
             Files.createDirectories(fileStorageLocation);
-            Path targetLocation = Paths.get(fileStorageLocation.toString() + fileName);
-            Files.copy(image.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-            return SEPARATOR + pathFile + fileName;
+            Path targetLocation = Paths.get(fileStorageLocation + fileName);
+            Files.copy(image, targetLocation, StandardCopyOption.REPLACE_EXISTING);
+            return uploadDir + fileName;
         } catch (IOException e) {
             e.printStackTrace();
             return null;

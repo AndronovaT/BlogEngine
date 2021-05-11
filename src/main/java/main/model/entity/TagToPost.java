@@ -11,9 +11,11 @@ public class TagToPost {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private int id;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "tag_id", nullable = false)
     private Tag tag;
