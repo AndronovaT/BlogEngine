@@ -2,6 +2,7 @@ package main.service;
 
 import main.model.entity.Post;
 import main.model.entity.PostVote;
+import main.model.entity.User;
 import main.repository.PostVoteRepository;
 import org.springframework.stereotype.Service;
 
@@ -24,5 +25,13 @@ public class PostVoteService {
     public List<PostVote> searchLikeByPost(Post post){
         List<PostVote> likes =  postVoteRepository.searchLikeByPost(post);
         return likes;
+    }
+
+    public List<PostVote> searchByPostUser(Post post, User user){
+        return postVoteRepository.searchLikeByUserPost(post, user);
+    }
+
+    public PostVote save (PostVote postVote) {
+       return postVoteRepository.save(postVote);
     }
 }

@@ -31,19 +31,21 @@ public class PostService {
     private final TagService tagService;
     private final TagToPostService tagToPostService;
     private final UserService userService;
+    private final SettingsService settingsService;
 
     @PersistenceContext
     EntityManager em;
 
     public PostService(PostRepository postRepository, PostVoteService postVoteService,
                        PostCommentsService postCommentsService, TagService tagService,
-                       TagToPostService tagToPostService, UserService userService) {
+                       TagToPostService tagToPostService, UserService userService, SettingsService settingsService) {
         this.postRepository = postRepository;
         this.postVoteService = postVoteService;
         this.postCommentsService = postCommentsService;
         this.tagService = tagService;
         this.tagToPostService = tagToPostService;
         this.userService = userService;
+        this.settingsService = settingsService;
     }
 
     public AllPostsResponse getAllPosts(int offset, int limit, Mode mode, String query){
@@ -273,7 +275,10 @@ public class PostService {
     public Post addPost(PostRequest postRequest){
         Post post = new Post();
         post.setIsActive(postRequest.getActive());
-        post.setModerationStatus(ModerationStatus.NEW);
+
+        ModerationStatus moderationStatus = getModerationStatus();
+
+        post.setModerationStatus(moderationStatus);
         post.setText(postRequest.getText());
         post.setTitle(postRequest.getTitle());
         long currentSec = getSeconds(new Date());
@@ -285,6 +290,17 @@ public class PostService {
         addTagToNewPost(postRequest, newPost, false);
 
         return newPost;
+    }
+
+    private ModerationStatus getModerationStatus() {
+        ModerationStatus moderationStatus;
+        if (settingsService.getGlobalSettings().isPostPremoderation()
+                && userService.getCurrentUser().getIsModerator() == 0) {
+            moderationStatus = ModerationStatus.NEW;
+        } else {
+            moderationStatus = ModerationStatus.ACCEPTED;
+        }
+        return moderationStatus;
     }
 
     private void addTagToNewPost(PostRequest postRequest, Post newPost, boolean update) {

@@ -2,7 +2,7 @@ package main.controller;
 
 import com.mortennobel.imagescaling.ResampleOp;
 import main.api.request.CommentRequest;
-import main.api.request.ModerationRequest;
+import main.api.request.ModerationVotesRequest;
 import main.api.request.ProfileRequest;
 import main.api.request.ProfileImageRequest;
 import main.api.response.*;
@@ -10,13 +10,13 @@ import main.api.response.tags.AllTagsResponse;
 import main.model.entity.Post;
 import main.model.entity.PostComment;
 import main.model.entity.User;
+import main.model.enums.BlogSetting;
 import main.model.enums.ModerationStatus;
 import main.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -83,8 +83,23 @@ public class ApiGeneralController {
     }
 
     @GetMapping("/statistics/my")
-    public ResponseEntity<MyStatisticsResponse> userStatistics(){
+    public ResponseEntity<StatisticsResponse> userStatistics(){
         return new ResponseEntity<>(userService.getUserStatistics(), HttpStatus.OK);
+    }
+
+    @GetMapping("/statistics/all")
+    public ResponseEntity<StatisticsResponse> blogStatistics(){
+        User currentUser = userService.getCurrentUser();
+        if (currentUser.getIsModerator() == 0 && !settingsService.getGlobalSettings().isStaticIsPublic()){
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+
+        SettingsResponse globalSettings = settingsService.getGlobalSettings();
+        if (!globalSettings.isStaticIsPublic()){
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+
+        return new ResponseEntity<>(userService.getAllStatistics(), HttpStatus.OK);
     }
 
     @PostMapping(value = "/image", consumes = {"multipart/form-data"})
@@ -139,7 +154,7 @@ public class ApiGeneralController {
 
     @PostMapping("/moderation")
     @PreAuthorize("hasAuthority('user:moderate')")
-    public ResponseEntity<ResultResponse> moderatePost(@RequestBody ModerationRequest moderationRequest){
+    public ResponseEntity<ResultResponse> moderatePost(@RequestBody ModerationVotesRequest moderationRequest){
         Post post = postService.getPostById(moderationRequest.getPostId());
         if(post == null){
             return new ResponseEntity<>(new ResultResponse(false), HttpStatus.OK);
@@ -225,6 +240,16 @@ public class ApiGeneralController {
         userService.saveUser(currentUser);
 
         return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
+    }
+
+    @PutMapping("/settings")
+    @PreAuthorize("hasAuthority('user:moderate')")
+    public ResponseEntity<ResultResponse> editSettings(@RequestBody SettingsResponse settingsResponse){
+        settingsService.setGlobalSettings(BlogSetting.MULTIUSER_MODE, settingsResponse.isMultiuserMode());
+        settingsService.setGlobalSettings(BlogSetting.POST_PREMODERATION, settingsResponse.isPostPremoderation());
+        settingsService.setGlobalSettings(BlogSetting.STATISTICS_IS_PUBLIC, settingsResponse.isStaticIsPublic());
+
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     public String storeFile(InputStream image, String originalFilename ) {

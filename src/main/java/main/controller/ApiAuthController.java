@@ -5,12 +5,14 @@ import main.api.request.registration.ChangePasswordRequest;
 import main.api.request.registration.LoginRequest;
 import main.api.request.registration.RegisterRequest;
 import main.api.response.InitResponse;
+import main.api.response.SettingsResponse;
 import main.api.response.authorization.LoginResponse;
 import main.api.response.authorization.CaptchaResponse;
 import main.api.response.ResultResponse;
 import main.model.entity.CaptchaCode;
 import main.model.entity.User;
 import main.service.CaptchaCodeService;
+import main.service.SettingsService;
 import main.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -33,15 +35,17 @@ public class ApiAuthController {
     private final CaptchaCodeService captchaCodeService;
     private final UserService userService;
     private final InitResponse initResponse;
-
+    private final SettingsService settingsService;
     @Autowired
     private MailSender emailSender;
 
-    public ApiAuthController(LoginResponse loginResponse, CaptchaCodeService captchaCodeService, UserService userService, InitResponse initResponse) {
+    public ApiAuthController(LoginResponse loginResponse, CaptchaCodeService captchaCodeService, UserService userService,
+                             InitResponse initResponse, SettingsService settingsService) {
         this.loginResponse = loginResponse;
         this.captchaCodeService = captchaCodeService;
         this.userService = userService;
         this.initResponse = initResponse;
+        this.settingsService = settingsService;
     }
 
     @GetMapping("/check")
@@ -62,6 +66,9 @@ public class ApiAuthController {
 
     @PostMapping("/register")
     public ResponseEntity<ResultResponse> registerUser(@RequestBody RegisterRequest registerRequest){
+        if (!settingsService.getGlobalSettings().isMultiuserMode()){
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
         Map<String, String> errors = userService.checkUserData(registerRequest);
 
         if (errors.size() > 0){

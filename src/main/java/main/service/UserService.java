@@ -4,7 +4,7 @@ import main.api.request.ProfileImageRequest;
 import main.api.request.ProfileRequest;
 import main.api.request.registration.LoginRequest;
 import main.api.request.registration.RegisterRequest;
-import main.api.response.MyStatisticsResponse;
+import main.api.response.StatisticsResponse;
 import main.api.response.authorization.LoginResponse;
 import main.api.response.authorization.UserResponse;
 import main.model.entity.CaptchaCode;
@@ -178,14 +178,14 @@ public class UserService {
         return loginResponse;
     }
 
-    public MyStatisticsResponse getUserStatistics(){
-        List<MyStatisticsResponse> resultQueryUserStatistic = getMyStatisticsResponseFromQuery(getCurrentUser());
+    public StatisticsResponse getUserStatistics(){
+        List<StatisticsResponse> resultQueryUserStatistic = getStatisticsResponseFromQuery(getCurrentUser());
         if (resultQueryUserStatistic.isEmpty()) {
-            return new MyStatisticsResponse();
+            return new StatisticsResponse();
         }
         else {
-            MyStatisticsResponse myStatisticsResponse =  resultQueryUserStatistic.get(0);
-            List<Tuple> votesCountUser = getVotesCountUser(getCurrentUser());
+            StatisticsResponse myStatisticsResponse =  resultQueryUserStatistic.get(0);
+            List<Tuple> votesCountUser = getVotesCount(getCurrentUser());
             votesCountUser.forEach(res -> {
                 myStatisticsResponse.setLikesCount(Math.toIntExact((Long) res.get("likesCount")));
                 myStatisticsResponse.setDislikesCount(Math.toIntExact((Long) res.get("dislikesCount")));
@@ -195,9 +195,9 @@ public class UserService {
         }
     }
 
-    private List<MyStatisticsResponse> getMyStatisticsResponseFromQuery(User user) {
+    private List<StatisticsResponse> getStatisticsResponseFromQuery(User user) {
         return em
-                .createQuery( "SELECT NEW main.api.response.MyStatisticsResponse(COUNT(DISTINCT p.id) AS postsCount, " +
+                .createQuery( "SELECT NEW main.api.response.StatisticsResponse(COUNT(DISTINCT p.id) AS postsCount, " +
                         "0 AS likesCount, " +
                         "0 AS dislikesCount, " +
                         "SUM(p.viewCount) AS viewsCount, " +
@@ -205,12 +205,12 @@ public class UserService {
                         "FROM User u " +
                         "LEFT JOIN Post as p ON p.user = u " +
                         "WHERE p.user = :user " +
-                        "GROUP BY p.user", MyStatisticsResponse.class)
+                        "GROUP BY p.user", StatisticsResponse.class)
                 .setParameter("user", user)
                 .getResultList();
     }
 
-    private List<Tuple> getVotesCountUser(User user){
+    private List<Tuple> getVotesCount(User user){
         return em
                 .createQuery( "SELECT SUM(CASE WHEN votes.value = 1 THEN 1 ELSE 0 END) AS likesCount, " +
                         "SUM(CASE WHEN votes.value = -1 THEN 1 ELSE 0 END) AS dislikesCount " +
@@ -219,6 +219,42 @@ public class UserService {
                         "WHERE u = :user " +
                         "GROUP BY u", Tuple.class)
                 .setParameter("user", user)
+                .getResultList();
+    }
+
+    public StatisticsResponse getAllStatistics(){
+        List<StatisticsResponse> resultQueryUserStatistic = getStatisticsResponseFromQuery();
+        if (resultQueryUserStatistic.isEmpty()) {
+            return new StatisticsResponse();
+        }
+        else {
+            StatisticsResponse statisticsResponse =  resultQueryUserStatistic.get(0);
+            List<Tuple> votesCountUser = getVotesCount();
+            votesCountUser.forEach(res -> {
+                statisticsResponse.setLikesCount(Math.toIntExact((Long) res.get("likesCount")));
+                statisticsResponse.setDislikesCount(Math.toIntExact((Long) res.get("dislikesCount")));
+            });
+
+            return statisticsResponse;
+        }
+    }
+
+    private List<StatisticsResponse> getStatisticsResponseFromQuery() {
+        return em
+                .createQuery( "SELECT NEW main.api.response.StatisticsResponse(COUNT(DISTINCT p.id) AS postsCount, " +
+                        "0 AS likesCount, " +
+                        "0 AS dislikesCount, " +
+                        "SUM(p.viewCount) AS viewsCount, " +
+                        "MIN(UNIX_TIMESTAMP(p.time)) AS firstPublication) " +
+                        "FROM Post as p ", StatisticsResponse.class)
+                .getResultList();
+    }
+
+    private List<Tuple> getVotesCount(){
+        return em
+                .createQuery( "SELECT SUM(CASE WHEN votes.value = 1 THEN 1 ELSE 0 END) AS likesCount, " +
+                        "SUM(CASE WHEN votes.value = -1 THEN 1 ELSE 0 END) AS dislikesCount " +
+                        "FROM PostVote AS votes ", Tuple.class)
                 .getResultList();
     }
 
