@@ -1,11 +1,21 @@
+server:
+  port: ${PORT:8080}
+
+flyway:
+  url: jdbc:${CLEARDB_DATABASE_URL:mysql://localhost:3306/blog_engine}
+  schemas: heroku_368d9806fcc449d
+  locations: db/migration
+  driver: com.mysql.jdbc.Driver
+
 spring:
 
   datasource:
     driverClassName: com.mysql.jdbc.Driver
     dialect: org.hibernate.dialect.MySQL8Dialect
-    url: jdbc:mysql://localhost:3306/blogengine?serverTimezone=UTC
+    url: jdbc:${CLEARDB_DATABASE_URL:mysql://localhost:3306/blog_engine}
     username: root
     password: testtest
+
 
   jpa:
     hibernate.ddl-auto: none

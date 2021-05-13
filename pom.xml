@@ -31,17 +31,7 @@
             <plugin>
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-maven-plugin</artifactId>
-                <version>7.5.3</version>
-                <configuration>
-                    <locations>db/migration</locations>
-                    <driver>com.mysql.jdbc.Driver</driver>
-                    <url>jdbc:mysql://localhost:3306/blogengine?serverTimezone=UTC</url>
-                    <user>root</user>
-                    <password>testtest</password>
-                    <schemas>
-                        <schema>blogengine</schema>
-                    </schemas>
-                </configuration>
+                <version>5.2.4</version>
             </plugin>
         </plugins>
     </build>
@@ -98,8 +88,14 @@
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-maven-plugin</artifactId>
-            <version>7.5.3</version>
+            <version>5.2.4</version>
         </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>5.2.4</version>
+        </dependency>
+
 
         <dependency>
             <groupId>commons-io</groupId>
