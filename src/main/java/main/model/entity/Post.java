@@ -101,6 +101,7 @@ public class Post {
         this.user = user;
         this.title = title;
         this.announce = announce.replaceAll("<[^>]+>", "");
+        this.announce = this.announce.replaceAll("&nbsp;"," ");
         if (this.announce.length() > 150) {
             this.announce = this.announce.substring(0, 150) + "...";
         }
