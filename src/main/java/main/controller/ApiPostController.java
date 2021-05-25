@@ -58,10 +58,7 @@ public class ApiPostController {
         }
         InfoPostResponse postById = postService.getInfoPostResponse(post);
 
-        User currentUser = userService.getCurrentUser();
-        if (currentUser.getIsModerator() == 0 && !currentUser.equals(post.getUser())) {
-            postService.addView(post);
-        }
+        postService.addView(post);
 
         return new ResponseEntity<>(postById, HttpStatus.OK);
     }

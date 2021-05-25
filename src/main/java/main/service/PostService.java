@@ -60,12 +60,15 @@ public class PostService {
 
     public void addView(Post post){
 
-        if (post.getIsActive() == 1 && post.getModerationStatus() == ModerationStatus.ACCEPTED) {
-            int count = post.getViewCount();
-            count++;
-            post.setViewCount(count);
+        User currentUser = userService.getCurrentUser();
+        if (currentUser.getIsModerator() == 0 && !currentUser.equals(post.getUser())) {
+            if (post.getIsActive() == 1 && post.getModerationStatus() == ModerationStatus.ACCEPTED) {
+                int count = post.getViewCount();
+                count++;
+                post.setViewCount(count);
 
-            postRepository.save(post);
+                postRepository.save(post);
+            }
         }
     }
 
