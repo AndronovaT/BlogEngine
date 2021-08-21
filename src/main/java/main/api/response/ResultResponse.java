@@ -8,8 +8,11 @@ import java.util.Map;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ResultResponse {
+
     Boolean result;
+
     Map<String, String> errors;
+
     Integer id;
 
     public ResultResponse() {

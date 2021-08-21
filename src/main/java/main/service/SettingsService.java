@@ -6,6 +6,7 @@ import main.model.enums.BlogSetting;
 import main.model.enums.YesNo;
 import main.repository.GlobalSettingsRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -66,5 +67,11 @@ public class SettingsService {
 
     public GlobalSetting save(GlobalSetting globalSetting){
         return globalSettingsRepository.save(globalSetting);
+    }
+
+    public void editGlobalSettings(@RequestBody SettingsResponse settingsResponse) {
+        setGlobalSettings(BlogSetting.MULTIUSER_MODE, settingsResponse.isMultiuserMode());
+        setGlobalSettings(BlogSetting.POST_PREMODERATION, settingsResponse.isPostPremoderation());
+        setGlobalSettings(BlogSetting.STATISTICS_IS_PUBLIC, settingsResponse.isStaticIsPublic());
     }
 }

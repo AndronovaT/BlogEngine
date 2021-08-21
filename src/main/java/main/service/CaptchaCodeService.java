@@ -49,7 +49,10 @@ public class CaptchaCodeService {
         return captchaCodeRepository.findBySecret(secret);
     }
 
-    public ResponseEntity<CaptchaResponse> generateCaptcha() {
+    public ResponseEntity<CaptchaResponse> createResponseCaptcha() {
+
+        deleteOldCaptcha();
+
         String word = generateCaptchaText(CAPTCHA_LENGTH);
         BufferedImage captchaImage = createImage(word);
         String secret = generateCaptchaText(SECRET_LENGTH);

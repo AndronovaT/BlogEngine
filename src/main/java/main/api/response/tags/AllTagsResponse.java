@@ -7,5 +7,7 @@ import java.util.List;
 
 @Data
 public class AllTagsResponse {
+
     private List<TagResponse> tags = new ArrayList<>();
+
 }

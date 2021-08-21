@@ -6,6 +6,8 @@ import main.model.entity.User;
 import main.repository.PostVoteRepository;
 import org.springframework.stereotype.Service;
 
+
+import java.util.Date;
 import java.util.List;
 
 @Service
@@ -34,4 +36,27 @@ public class PostVoteService {
     public PostVote save (PostVote postVote) {
        return postVoteRepository.save(postVote);
     }
+
+    public boolean addVote(Post post, User currentUser, byte vote) {
+        List<PostVote> postVotes = searchByPostUser(post, currentUser);
+        PostVote postVote = new PostVote();
+
+        if (!postVotes.isEmpty()){
+            postVote = postVotes.get(0);
+            if (postVote.getValue() == vote) {
+                return false;
+            } else {
+                postVote.setValue(vote);
+            }
+        } else {
+            postVote.setValue(vote);
+            postVote.setPost(post);
+            postVote.setUser(currentUser);
+            postVote.setTime(new Date());
+        }
+        save(postVote);
+        return true;
+    }
+
+
 }

@@ -8,7 +8,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class LoginResponse {
+
     private boolean result;
+
     private UserResponse user;
 
     public LoginResponse(boolean result) {

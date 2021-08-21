@@ -4,12 +4,15 @@ import main.api.request.ProfileImageRequest;
 import main.api.request.ProfileRequest;
 import main.api.request.registration.LoginRequest;
 import main.api.request.registration.RegisterRequest;
+import main.api.response.SettingsResponse;
 import main.api.response.StatisticsResponse;
 import main.api.response.authorization.LoginResponse;
 import main.api.response.authorization.UserResponse;
 import main.model.entity.CaptchaCode;
 import main.model.entity.User;
 import main.repository.UserRepository;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -33,15 +36,17 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final CaptchaCodeService captchaCodeService;
+    private final SettingsService settingsService;
     @PersistenceContext
     EntityManager em;
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                       AuthenticationManager authenticationManager, CaptchaCodeService captchaCodeService) {
+                       AuthenticationManager authenticationManager, CaptchaCodeService captchaCodeService, SettingsService settingsService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.captchaCodeService = captchaCodeService;
+        this.settingsService = settingsService;
     }
 
     public List<User> findByEmail(String email){
@@ -193,6 +198,20 @@ public class UserService {
 
             return myStatisticsResponse;
         }
+    }
+
+    public ResponseEntity<StatisticsResponse> createBlogStatisticsResponse() {
+        User currentUser = getCurrentUser();
+        if (currentUser.getIsModerator() == 0 && !settingsService.getGlobalSettings().isStaticIsPublic()){
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+
+        SettingsResponse globalSettings = settingsService.getGlobalSettings();
+        if (!globalSettings.isStaticIsPublic()){
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+
+        return new ResponseEntity<>(getAllStatistics(), HttpStatus.OK);
     }
 
     private List<StatisticsResponse> getStatisticsResponseFromQuery(User user) {

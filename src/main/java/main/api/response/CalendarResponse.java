@@ -8,8 +8,11 @@ import java.util.*;
 
 @Data
 public class CalendarResponse {
+
     Set<Integer> years = new HashSet<>();
+
     Map<String, Integer> posts = new HashMap<>();
+
 
     public CalendarResponse() {
     }

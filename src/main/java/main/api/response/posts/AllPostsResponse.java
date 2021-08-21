@@ -8,6 +8,9 @@ import java.util.List;
 
 @Data
 public class AllPostsResponse {
+
     private int count;
+
     private List<Post> posts = new ArrayList<>();
+
 }

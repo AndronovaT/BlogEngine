@@ -14,7 +14,9 @@ import java.util.List;
 public class SecurityUser implements UserDetails {
 
     private final String userName;
+
     private final String password;
+
     private final List<SimpleGrantedAuthority> authorities;
 
     @Override

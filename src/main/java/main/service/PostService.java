@@ -1,7 +1,10 @@
 package main.service;
 
+import main.api.request.CommentRequest;
+import main.api.request.ModerationVotesRequest;
 import main.api.request.PostRequest;
 import main.api.response.CalendarResponse;
+import main.api.response.ResultResponse;
 import main.api.response.authorization.UserResponse;
 import main.api.response.posts.AllPostsResponse;
 import main.api.response.posts.CommentResponse;
@@ -14,7 +17,11 @@ import main.repository.PostRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -58,6 +65,19 @@ public class PostService {
 
     }
 
+    public ResponseEntity<InfoPostResponse> getInfoPostResponse(@PathVariable(name = "ID") Integer id) {
+
+        Post post = getPostById(id);
+        if(post == null){
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        InfoPostResponse postById = getInfoPostResponse(post);
+
+        addView(post);
+
+        return new ResponseEntity<>(postById, HttpStatus.OK);
+    }
+
     public void addView(Post post){
 
         User currentUser = userService.getCurrentUser();
@@ -82,6 +102,7 @@ public class PostService {
     }
 
     public InfoPostResponse getInfoPostResponse(Post post) {
+
         InfoPostResponse infoPostResponse = new InfoPostResponse();
         infoPostResponse.setId(post.getId());
 
@@ -125,9 +146,11 @@ public class PostService {
         infoPostResponse.setTags(nameTags);
 
         return infoPostResponse;
+
     }
 
     private CommentResponse getCommentResponse(PostComment postComment) {
+
         CommentResponse commentResponse = new CommentResponse();
         commentResponse.setId(postComment.getId());
 
@@ -143,6 +166,7 @@ public class PostService {
         userCommentResponse.setPhoto(userComment.getPhoto());
         commentResponse.setUser(userCommentResponse);
         return commentResponse;
+
     }
 
     public AllPostsResponse getPostsByDate(int offset, int limit, LocalDate date){
@@ -167,6 +191,7 @@ public class PostService {
     }
 
     private AllPostsResponse getAllPostsResponse(Page<Post> postsPage) {
+
         if (postsPage == null || !postsPage.hasContent()) {
             AllPostsResponse emptyPostsResponse = new AllPostsResponse();
             emptyPostsResponse.setCount(0);
@@ -187,6 +212,7 @@ public class PostService {
 
         allPostsResponse.setPosts(postList);
         return allPostsResponse;
+
     }
 
     private int getComments(Post post) {
@@ -223,6 +249,11 @@ public class PostService {
     }
 
     public CalendarResponse getCalendarPosts(Integer year){
+
+        if (year == null || year == 0) {
+            Calendar calendar = Calendar.getInstance();
+            year = calendar.get(Calendar.YEAR);
+        }
 
         CalendarResponse calendarResponse = new CalendarResponse(year, getResultQueryCalendarCount());
         return calendarResponse;
@@ -333,7 +364,6 @@ public class PostService {
         }
     }
 
-
     public Post editPost(Post post, PostRequest postRequest){
         post.setIsActive(postRequest.getActive());
         post.setText(postRequest.getText());
@@ -350,4 +380,124 @@ public class PostService {
 
         return newPost;
     }
+
+    public ResponseEntity<ResultResponse> moderatePostResponse(@RequestBody ModerationVotesRequest moderationRequest) {
+        Post post = getPostById(moderationRequest.getPostId());
+        if(post == null){
+            return new ResponseEntity<>(new ResultResponse(false), HttpStatus.OK);
+        }
+
+        ModerationStatus moderationStatus = ModerationStatus.NEW;
+        if (moderationRequest.getDecision().equals("decline")) {
+            moderationStatus = ModerationStatus.DECLINED;
+        } else if (moderationRequest.getDecision().equals("accept")) {
+            moderationStatus = ModerationStatus.ACCEPTED;
+        }
+
+        post.setModerationStatus(moderationStatus);
+        post.setModerator(userService.getCurrentUser());
+        savePost(post);
+
+        return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
+    }
+
+    public ResponseEntity<ResultResponse> addPostResponse(@RequestBody PostRequest postRequest) {
+        Map<String, String> errors = checkPost(postRequest);
+        if (errors.size() > 0){
+            return new ResponseEntity<>(new ResultResponse(false, errors), HttpStatus.OK);
+        }
+
+        addPost(postRequest);
+
+        return new ResponseEntity(new ResultResponse(true), HttpStatus.OK);
+    }
+
+    public ResponseEntity<ResultResponse> editPostResponse(@PathVariable(name = "ID") Integer id, @RequestBody PostRequest postRequest) {
+        Post post = getPostById(id);
+        if(post == null){
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        Map<String, String> errors = checkPost(postRequest);
+        if (errors.size() > 0){
+            return new ResponseEntity<>(new ResultResponse(false, errors), HttpStatus.OK);
+        }
+
+        editPost(post, postRequest);
+
+        return new ResponseEntity(new ResultResponse(true), HttpStatus.OK);
+    }
+
+    public ResponseEntity<ResultResponse> getLikeResponse(@RequestBody ModerationVotesRequest votesRequest, byte i) {
+        Post post = getPostById(votesRequest.getPostId());
+        if (post == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        User currentUser = userService.getCurrentUser();
+
+        byte like = i;
+        if (!postVoteService.addVote(post, currentUser, like)) return new ResponseEntity<>(new ResultResponse(false), HttpStatus.OK);
+
+        return new ResponseEntity<>(new ResultResponse(true), HttpStatus.OK);
+    }
+
+    private Map<String, String> checkPost(PostRequest postRequest) {
+        Map<String, String> errors = new HashMap<>();
+
+        if (postRequest.getTitle() == null || postRequest.getTitle().equals("")){
+            errors.put("title", "Заголовок не установлен");
+        }
+
+        if (postRequest.getTitle().length() < 3){
+            errors.put("title", "Заголовок слишком короткий");
+        }
+
+        if (postRequest.getText() == null || postRequest.getText().equals("")){
+            errors.put("text", "Текст публикации не установлен");
+        }
+
+        if (postRequest.getText().length() < 3){
+            errors.put("text", "Текст публикации слишком короткий");
+        }
+
+        return errors;
+    }
+
+    public ResponseEntity<ResultResponse> addCommentResponse(@RequestBody CommentRequest commentRequest) {
+
+        Post post = getPostById(commentRequest.getPostId());
+        if(post == null){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        PostComment postComment = null;
+        String commentStr = commentRequest.getParentId();
+        if (commentStr != null && !commentStr.isEmpty()){
+            int commentId = Integer.parseInt(commentStr);
+            postComment = postCommentsService.getPostCommentById(commentId);
+            if(postComment == null){
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+        }
+
+        Map<String, String> errors = checkComment(commentRequest.getText());
+        if (errors.size() > 0){
+            return new ResponseEntity<>(new ResultResponse(false, errors), HttpStatus.BAD_REQUEST);
+        }
+
+        PostComment postCommentSave = postCommentsService.addPostComment(post, postComment, commentRequest.getText(), userService.getCurrentUser());
+        return new ResponseEntity<>(new ResultResponse(postCommentSave.getId()), HttpStatus.OK);
+    }
+
+    private Map<String, String> checkComment(String text) {
+        Map<String, String> errors = new HashMap<>();
+
+        if (text.isEmpty() || text.length() < 3) {
+            errors.put("text", "Текст комментария не задан или слишком короткий");
+        }
+
+        return errors;
+    }
+
 }
