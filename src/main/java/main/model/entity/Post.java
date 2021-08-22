@@ -94,6 +94,15 @@ public class Post {
     public Post() {
     }
 
+    public Post(int id, byte isActive, User user, String title, String text) {
+        this.id = id;
+        this.isActive = isActive;
+        this.user = user;
+        this.time = new Date();
+        this.title = title;
+        this.text = text;
+    }
+
     public Post(int id, long timestamp, User user, String title, String announce, int viewCount,
                         long likeCount, long dislikeCount, long commentCount) {
         this.id = id;

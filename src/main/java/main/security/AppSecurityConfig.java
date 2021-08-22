@@ -8,7 +8,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -16,10 +18,15 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 
 
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.io.PrintWriter;
 
 
@@ -46,6 +53,7 @@ public class AppSecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/**").permitAll()
                 .anyRequest()
                 .authenticated()
+                .and().exceptionHandling().authenticationEntryPoint(unauthorizedEntryPoint())
                 .and()
                 .formLogin().disable()
                 .logout()
@@ -64,6 +72,28 @@ public class AppSecurityConfig extends WebSecurityConfigurerAdapter {
                 .httpBasic();
     }
 
+
+    @Bean
+    public AuthenticationEntryPoint unauthorizedEntryPoint() {
+        return new RestAuthenticationEntryPoint();
+    }
+
+    public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
+
+
+        public RestAuthenticationEntryPoint() {
+            super();
+        }
+
+        @Override
+        public void commence(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, AuthenticationException e) throws IOException, ServletException {
+            String error="{ \"status\":\"FAILURE\",\"error\":{\"code\":\"401\",\"message\":\"" +"Bad credential\"} }";
+            HttpServletResponse httpResponse = httpServletResponse;
+            httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            httpResponse.setContentType("application/json");
+            httpResponse.getOutputStream().println(error);
+        }
+    }
 
     @Bean
     protected DaoAuthenticationProvider daoAuthenticationProvider() {

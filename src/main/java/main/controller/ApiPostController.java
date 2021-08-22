@@ -9,8 +9,6 @@ import main.model.enums.Mode;
 import main.model.enums.ModerationStatus;
 import main.model.enums.StatusMyPosts;
 import main.service.PostService;
-import main.service.PostVoteService;
-import main.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,14 +24,10 @@ import java.time.format.DateTimeFormatter;
 public class ApiPostController {
 
     private final PostService postService;
-    private final UserService userService;
-    private final PostVoteService postVoteService;
     private final static DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    public ApiPostController(PostService postService, UserService userService, PostVoteService postVoteService) {
+    public ApiPostController(PostService postService) {
         this.postService = postService;
-        this.userService = userService;
-        this.postVoteService = postVoteService;
     }
 
 

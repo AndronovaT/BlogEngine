@@ -1,6 +1,10 @@
 server:
   port: ${PORT:8080}
 
+local:
+  server:
+    port: http://localhost:8080
+
 flyway:
   url: jdbc:${CLEARDB_DATABASE_URL:mysql://localhost:3306/blog_engine}
   schemas: heroku_368d9806fcc449d

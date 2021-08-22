@@ -1,6 +1,7 @@
 package main.model.entity;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
@@ -11,6 +12,7 @@ import java.util.List;
 @Data
 @Entity
 @Table(name = "post_comments")
+@NoArgsConstructor
 public class PostComment {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -38,4 +40,10 @@ public class PostComment {
     @Column(columnDefinition = "TEXT")
     @Type(type = "text")
     private String text;
+
+    public PostComment(User user, Post post, @NotNull String text) {
+        this.user = user;
+        this.post = post;
+        this.text = text;
+    }
 }

@@ -12,9 +12,12 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.Date;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface PostRepository extends PagingAndSortingRepository<Post, Integer>{
+
+    Optional<Post> getPostById(Integer id);
 
     @Query(value = "SELECT p FROM Post p " +
             "WHERE p.isActive = 1 " +
